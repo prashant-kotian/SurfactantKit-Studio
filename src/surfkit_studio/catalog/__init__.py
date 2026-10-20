@@ -7,10 +7,11 @@ from __future__ import annotations
 
 from surfactantkit.validation_tiers import get_tool_tier, VALIDATION_TIERS
 
-from . import tensiometry, thermo
+from . import mixtures, tensiometry, thermo
 from .base import Technique
 
-TECHNIQUES: dict[str, Technique] = {t.id: t for t in [*tensiometry.TECHNIQUES, *thermo.TECHNIQUES]}
+TECHNIQUES: dict[str, Technique] = {t.id: t for t in [*tensiometry.TECHNIQUES, *thermo.TECHNIQUES,
+                                                      *mixtures.TECHNIQUES]}
 
 TIER_MEANING = {
     "T1": "Reproduces published numbers from primary literature.",

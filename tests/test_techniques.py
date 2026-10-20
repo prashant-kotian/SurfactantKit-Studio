@@ -102,6 +102,22 @@ def test_vant_hoff_recovers_synthetic_parameters():
     assert vals["Enthalpy of micellization, Delta H"] == pytest.approx(-1.0 - 0.5 * (ref_T - 298.15) / 1, abs=0.3)
 
 
+def test_mixed_micelles_recover_synthetic_rubingh_beta():
+    rows = load("synthetic_mixed_cmc.csv")
+    r = TECHNIQUES["mixed_micelles"].run(RunInput(
+        {"alpha1": [x[0] for x in rows], "cmc_mix": [x[1] for x in rows]},
+        {"cmc1_mM": 14.8, "cmc2_mM": 8.0, "temperature_K": 298.15}, "bic", {}))
+    assert r.provides["rubingh_beta"] == pytest.approx(-3.0, abs=0.15)      # generated with beta = -3.0
+    assert r.provides["mixture_model"] != "clint_ideal"
+    assert any("Synergism in mixed micelle formation is expected" in c for c in r.conclusion)  # |-3| > ln(14.8/8)
+
+
+def test_mixed_micelles_rejects_pure_components_in_series():
+    with pytest.raises(ValueError):
+        TECHNIQUES["mixed_micelles"].run(RunInput({"alpha1": [0.0, 0.5, 1.0], "cmc_mix": [8, 7, 14.8]},
+                                                  {"cmc1_mM": 14.8, "cmc2_mM": 8.0, "temperature_K": 298.15}, "bic", {}))
+
+
 def test_tree_is_rooted_in_primary_techniques_and_every_unlock_exists():
     for cat in tree():
         for t in cat["techniques"]:

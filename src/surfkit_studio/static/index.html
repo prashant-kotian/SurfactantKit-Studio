@@ -10,6 +10,9 @@
 <body>
 <header class="bar">
   <div class="brand">SurfactantKit Studio <span class="tag">runs locally &middot; your data stays on this computer</span></div>
+  <label class="ai" title="Local language model via Ollama. It only routes your request; every number comes from SurfactantKit.">
+    <input type="checkbox" id="ai-toggle" checked> <span id="ai-status">Local AI: checking...</span>
+  </label>
   <div class="report">
     <input id="sample" placeholder="Sample name (for the report)">
     <button id="dl-docx" class="secondary" disabled>Report .docx</button>

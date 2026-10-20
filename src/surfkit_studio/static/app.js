@@ -11,10 +11,16 @@ async function api(path, opts = {}) {
 }
 const post = (path, data) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 
-function say(text, who = "bot") {
+function say(text, who = "bot", engine = "") {
   const d = document.createElement("div");
   d.className = `msg ${who}`;
   d.textContent = text;
+  if (engine) {
+    const e = document.createElement("span");
+    e.className = "engine";
+    e.textContent = engine === "local-ai" ? "routed by the local AI" : "routed by keyword matching";
+    d.appendChild(e);
+  }
   $("#log").appendChild(d);
   d.scrollIntoView({ block: "end" });
 }
@@ -133,7 +139,7 @@ $("#chat-form").onsubmit = async (e) => {
   try {
     const r = await post("/api/chat", { sid: SID, message: msg });
     if (r.action?.open) openTechnique(r.action.open);
-    say(r.reply);
+    say(r.reply, "bot", r.engine);
   } catch (err) { say(`Error: ${err.message}`); }
 };
 
@@ -144,8 +150,17 @@ for (const fmt of ["docx", "pdf"]) {
   };
 }
 
+async function showAiStatus(useAi) {
+  const s = await post("/api/settings", { sid: SID, use_ai: useAi });
+  $("#ai-status").innerHTML = !useAi ? "Local AI off (keyword mode)"
+    : s.local_ai ? `Local AI: <span class="on">${esc(s.model)}</span>`
+    : `Local AI unavailable (start Ollama, model ${esc(s.model)}); using keyword mode`;
+}
+$("#ai-toggle").onchange = (e) => showAiStatus(e.target.checked);
+
 (async () => {
   SID = (await post("/api/session", {})).sid;
+  await showAiStatus(true);
   await loadCatalog();
   say("Hello. Tell me what data you have or what you want to find, for example: \"I have surface tension vs concentration for my surfactant and want the CMC\". Everything runs on this computer.");
 })();

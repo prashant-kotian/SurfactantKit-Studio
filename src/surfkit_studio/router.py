@@ -17,12 +17,33 @@ def score(msg: str, t: Technique) -> int:
     m = f" {msg.lower()} "
     s = sum(3 for k in t.keywords if k in m)
     s += sum(1 for w in re.findall(r"[a-z]{4,}", t.title.lower()) if w in m)
-    if t.dataset:
-        s += sum(1 for col in t.dataset.columns for a in col.aliases if a.strip() and a.strip() in m)
+    if t.dataset:   # only whole-word aliases of 4+ letters: "c", "st" matched almost any sentence
+        s += sum(1 for col in t.dataset.columns for a in col.aliases
+                 if len(a.strip()) >= 4 and re.search(rf"\b{re.escape(a.strip())}\b", m))
     return s
 
 
-def route(msg: str, session: dict) -> dict:
+def route(msg: str, session: dict, llm=None, history: list[dict] | None = None) -> dict:
+    """Local model first (if given and running), keyword scoring otherwise. The model only
+    chooses the technique and adds a sentence; the substance always comes from explain()."""
+    if llm is not None:
+        res = llm.route(msg, session, history)
+        if res is not None:
+            if res["technique"]:
+                t = TECHNIQUES[res["technique"]]
+                body = explain(t, session)
+                reply = f"{res['reply']}\n\n{body}" if res["reply"] else body
+                return {"reply": reply, "action": {"open": t.id}, "engine": "local-ai"}
+            kw = keyword_route(msg, session)
+            best = TECHNIQUES[kw["action"]["open"]] if kw["action"] else None
+            if best and score(msg, best) >= 3:      # model unsure but a real keyword matched
+                return {**kw, "engine": "keyword"}
+            lead = res["reply"] + "\n\n" if res["reply"] else ""
+            return {"reply": lead + kw["reply"], "action": None, "engine": "local-ai"}
+    return {**keyword_route(msg, session), "engine": "keyword"}
+
+
+def keyword_route(msg: str, session: dict) -> dict:
     ranked = sorted(TECHNIQUES.values(), key=lambda t: score(msg, t), reverse=True)
     best = ranked[0]
     if score(msg, best) == 0:

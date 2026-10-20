@@ -33,6 +33,18 @@ REFERENCES: dict[str, dict] = {
         "doi": "10.1515/zpch-1925-11629",
         "verified": True, "checked": "2026-10-20, reference lists of Hansen et al. 2025 (JPCC) and Volkova-Gugeshashvili 2006",
     },
+    "clint_1975": {
+        "text": "Clint, J. H. Micellization of Mixed Nonionic Surface Active Agents. J. Chem. Soc., Faraday Trans. 1 "
+                "1975, 71, 1327-1334.",
+        "doi": "10.1039/F19757101327",
+        "verified": True, "checked": "2026-10-20, RSC Publishing record",
+    },
+    "rubingh_1979": {
+        "text": "Rubingh, D. N. Mixed Micelle Solutions. In Solution Chemistry of Surfactants; Mittal, K. L., Ed.; "
+                "Plenum Press: New York, 1979; Vol. 1, pp 337-354.",
+        "doi": "10.1007/978-1-4615-7880-2",
+        "verified": True, "checked": "2026-10-20, Springer book record (chapter pages 337-354); DOI is the book's",
+    },
     "surfactantkit": {
         "text": "Kotian, P. D. SurfactantKit: surfactant and interfacial-science theory as a tested Python "
                 "library. Software, 2026.",

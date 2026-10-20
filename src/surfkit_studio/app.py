@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import citations, data_io, report, router
+from . import citations, data_io, llm, report, router
 from .catalog import TECHNIQUES, tiers, tree
 from .catalog.base import RunInput
 
@@ -147,21 +147,37 @@ class ChatRequest(BaseModel):
     message: str
 
 
+LLM = llm.LocalLLM()
+
+
+@app.get("/api/status")
+def status():
+    return {"local_ai": LLM.available(), "model": LLM.model}
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     s = _session(req.sid)
-    return router.route(req.message, s["values"])
+    model = LLM if s.get("use_ai", True) and LLM.available() else None
+    out = router.route(req.message, s["values"], model, s.setdefault("history", []))
+    s["history"] += [{"role": "user", "content": req.message},
+                     {"role": "assistant", "content": out["reply"][:600]}]
+    return out
 
 
 class Settings(BaseModel):
     sid: str
-    web_search: bool
+    use_ai: bool = True
+    model: str | None = None
 
 
 @app.post("/api/settings")
 def settings(req: Settings):
-    _session(req.sid)["web_search"] = req.web_search
-    return {"web_search": req.web_search}
+    s = _session(req.sid)
+    s["use_ai"] = req.use_ai
+    if req.model:
+        LLM.model = req.model
+    return {"use_ai": s["use_ai"], "model": LLM.model, "local_ai": LLM.available()}
 
 
 @app.get("/api/report/{sid}.{fmt}")

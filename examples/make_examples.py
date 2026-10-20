@@ -50,6 +50,24 @@ def main():
         rows.append((round(T - 273.15, 2), round(x * 55.5 * 1000, 4)))
     write("synthetic_cmc_vs_T.csv", ["Temperature (C)", "CMC (mM)"], rows)
 
+    # binary mixture: Rubingh regular solution, beta = -3.0, CMC1 = 14.8 mM, CMC2 = 8.0 mM, 0.5% noise
+    cmc1, cmc2, beta = 14.8, 8.0, -3.0
+    rows = []
+    for a in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
+        def mix_cmc(x):
+            f1, f2 = math.exp(beta * (1 - x) ** 2), math.exp(beta * x ** 2)
+            return 1.0 / (a / (f1 * cmc1) + (1 - a) / (f2 * cmc2)), f1
+
+        def h(x):                     # micellar x1 must equal alpha1 * cmc_mix / (f1 * cmc1)
+            c, f1 = mix_cmc(x)
+            return x - a * c / (f1 * cmc1)
+        lo, hi = 1e-9, 1 - 1e-9
+        for _ in range(200):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if h(lo) * h(mid) > 0 else (lo, mid)
+        rows.append((a, round(mix_cmc((lo + hi) / 2)[0] * (1 + rnd.gauss(0, 0.005)), 4)))
+    write("synthetic_mixed_cmc.csv", ["alpha1 (mole fraction)", "CMC mix (mM)"], rows)
+
 
 if __name__ == "__main__":
     main()
