@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import citations, data_io, llm, report, router
+from . import citations, data_io, literature, llm, report, router
 from .catalog import TECHNIQUES, tiers, tree
 from .catalog.base import RunInput
 
@@ -158,6 +158,9 @@ def status():
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     s = _session(req.sid)
+    q = literature.wants_search(req.message)
+    if q is not None:
+        return _literature_reply(s, q)
     model = LLM if s.get("use_ai", True) and LLM.available() else None
     out = router.route(req.message, s["values"], model, s.setdefault("history", []))
     s["history"] += [{"role": "user", "content": req.message},
@@ -165,19 +168,54 @@ def chat(req: ChatRequest):
     return out
 
 
+def _literature_reply(s: dict, q: str) -> dict:
+    if not s.get("web_search"):
+        return {"reply": "Literature search is off, so nothing was sent. Tick 'Search literature online' at the "
+                         "top to allow it; only the words you type after 'search:' leave this computer.",
+                "action": None, "engine": "literature"}
+    try:
+        res = literature.search(q)
+    except (literature.QueryRefused, ConnectionError) as e:
+        return {"reply": str(e), "action": None, "engine": "literature"}
+    return {"reply": literature.as_text(res), "action": None, "engine": "literature", "literature": res}
+
+
+class SearchRequest(BaseModel):
+    sid: str
+    query: str
+
+
+@app.post("/api/search")
+def search(req: SearchRequest):
+    s = _session(req.sid)
+    if not s.get("web_search"):
+        raise HTTPException(403, "Literature search is off for this session.")
+    try:
+        return literature.search(req.query)
+    except literature.QueryRefused as e:
+        raise HTTPException(400, str(e))
+    except ConnectionError as e:
+        raise HTTPException(502, str(e))
+
+
 class Settings(BaseModel):
     sid: str
-    use_ai: bool = True
+    use_ai: bool | None = None
+    web_search: bool | None = None
     model: str | None = None
 
 
 @app.post("/api/settings")
 def settings(req: Settings):
     s = _session(req.sid)
-    s["use_ai"] = req.use_ai
+    if req.use_ai is not None:
+        s["use_ai"] = req.use_ai
+    if req.web_search is not None:
+        s["web_search"] = req.web_search
     if req.model:
         LLM.model = req.model
-    return {"use_ai": s["use_ai"], "model": LLM.model, "local_ai": LLM.available()}
+    return {"use_ai": s.get("use_ai", True), "web_search": s["web_search"], "model": LLM.model,
+            "local_ai": LLM.available()}
 
 
 @app.get("/api/report/{sid}.{fmt}")

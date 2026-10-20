@@ -18,7 +18,8 @@ function say(text, who = "bot", engine = "") {
   if (engine) {
     const e = document.createElement("span");
     e.className = "engine";
-    e.textContent = engine === "local-ai" ? "routed by the local AI" : "routed by keyword matching";
+    e.textContent = engine === "local-ai" ? "routed by the local AI"
+      : engine === "literature" ? "literature search (only your search words were sent)" : "routed by keyword matching";
     d.appendChild(e);
   }
   $("#log").appendChild(d);
@@ -159,6 +160,14 @@ async function showAiStatus(useAi) {
     : `Local AI unavailable (start Ollama, model ${esc(s.model)}); using keyword mode`;
 }
 $("#ai-toggle").onchange = (e) => showAiStatus(e.target.checked);
+
+async function showWebStatus(on) {
+  const s = await post("/api/settings", { sid: SID, web_search: on });
+  $("#web-status").innerHTML = s.web_search
+    ? 'Search literature online: <span class="on">on</span> (type "search: keywords")'
+    : "Search literature online: off";
+}
+$("#web-toggle").onchange = (e) => showWebStatus(e.target.checked);
 
 (async () => {
   SID = (await post("/api/session", {})).sid;

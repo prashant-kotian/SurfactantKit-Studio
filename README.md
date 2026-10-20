@@ -65,6 +65,14 @@ comes from the toolkit and the catalog. Without Ollama the chat uses keyword mat
 Routing accuracy on 48 realistic requests (`tests/eval_router.py`): 45/48 with qwen3:1.7b
 plus keyword fallback, 0 replies containing numbers.
 
+## Literature search (optional, off by default)
+
+Tick "Search literature online" and type `search: your keywords` in the chat. Only those keywords
+are sent, to [OpenAlex](https://openalex.org) (Crossref if OpenAlex is unavailable); the reply shows
+exactly what was sent. Text with more than a few numbers is refused, so pasted data cannot leave
+by accident. Results are listed as search hits, not as checked citations. OpenAlex works without a
+key on a small shared daily budget; set a free key in `SURFKIT_OPENALEX_KEY` for regular use.
+
 ## Install and run
 
 ```bash
@@ -84,7 +92,7 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
 2. **Local chat model** (done): Ollama routing with keyword fallback, evaluated.
 3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter,
    HLB, HLD, wetting and surface energy, zeta potential, solubilization. Next: dynamic surface tension, foam.
-4. **Optional web search** (off by default): only your search words leave the computer, never your data.
+4. **Optional literature search** (done, off by default): only your search words leave the computer, never your data.
 
 ## Development
 
