@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfkit-studio"
+version = "0.1.0"
+description = "Local-first analysis app for surfactant datasets: CMC, adsorption and micellization thermodynamics with plots, plain-language conclusions, validation tiers, citations and DOCX/PDF reports. Your data never leaves your computer."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Prashant D. Kotian" }]
+keywords = ["surfactant", "CMC", "tensiometry", "conductivity", "micellization", "local-first", "ollama"]
+dependencies = [
+    "surfactantkit[calc]",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "matplotlib>=3.7",
+    "python-docx>=1.1",
+    "fpdf2>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "httpx>=0.27"]
+
+[project.scripts]
+surfkit-studio = "surfkit_studio.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+surfkit_studio = ["static/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
