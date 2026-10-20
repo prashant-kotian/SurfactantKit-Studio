@@ -7,12 +7,13 @@ from __future__ import annotations
 
 from surfactantkit.validation_tiers import get_tool_tier, VALIDATION_TIERS
 
-from . import aggregation, hlb, mixtures, tensiometry, thermo
+from . import aggregation, electrokinetics, hlb, hld, mixtures, solubilization, tensiometry, thermo, wetting
 from .base import Technique
 
 TECHNIQUES: dict[str, Technique] = {t.id: t for t in [*tensiometry.TECHNIQUES, *thermo.TECHNIQUES,
                                                       *mixtures.TECHNIQUES, *aggregation.TECHNIQUES,
-                                                      *hlb.TECHNIQUES]}
+                                                      *hlb.TECHNIQUES, *hld.TECHNIQUES, *wetting.TECHNIQUES,
+                                                      *electrokinetics.TECHNIQUES, *solubilization.TECHNIQUES]}
 
 TIER_MEANING = {
     "T1": "Reproduces published numbers from primary literature.",
@@ -29,9 +30,19 @@ EXACT = {   # pure arithmetic: nothing to validate beyond the formula itself
 }
 
 
-def tiers(t: Technique) -> list[dict]:
+def _called(call: str) -> str:
+    """'hlb.hlb_davies_guo_ecl(extra=...)' -> 'hlb_davies_guo_ecl'"""
+    return call.split("(")[0].rsplit(".", 1)[-1]
+
+
+def tiers(t: Technique, calls: list[str] | None = None) -> list[dict]:
+    """Tiers of the technique's tools; with `calls` (from a finished run), only the ones that run used."""
+    names = t.tools
+    if calls:
+        used = {_called(c) for c in calls}
+        names = [n for n in t.tools if n in used] or t.tools
     out = []
-    for name in t.tools:
+    for name in names:
         tier = get_tool_tier(name)
         if tier is None and name in EXACT:
             out.append({"tool": name, "tier": "exact", "meaning": EXACT[name], "evidence": EXACT[name]})

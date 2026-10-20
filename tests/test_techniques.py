@@ -161,9 +161,9 @@ def test_tree_is_rooted_in_primary_techniques_and_every_unlock_exists():
                 assert u["id"] in TECHNIQUES
     for t in TECHNIQUES.values():
         assert all(u in TECHNIQUES for u in t.unlocks)
-        assert t.level in ("primary", "derived", "structure")
+        assert t.level in ("primary", "derived", "structure", "measurement")
         assert (t.dataset is not None) == (t.level == "primary")
-        if t.level == "structure":
+        if t.level in ("structure", "measurement"):
             assert not t.requires
 
 
@@ -173,3 +173,132 @@ def test_every_technique_reports_tiers_and_only_verified_citations():
         assert tiers(t)
         for k in t.citations:
             assert k in citations.REFERENCES and citations.REFERENCES[k]["verified"], k
+
+
+# ------------------------------------------------------------- Phase 3 additions
+def test_owrk_recovers_a_constructed_solid():
+    """Angles generated from a solid with gamma_d = 30, gamma_p = 10 mN/m must give those back."""
+    from surfactantkit import wetting as W
+    sd, sp, th = 30.0, 10.0, {}
+    for n in ("water", "diiodomethane", "glycerol"):
+        L = W.get_owens_wendt_standard_liquid(n)
+        gl = L["dispersive"] + L["polar"]
+        cos = 2 * (math.sqrt(sd * L["dispersive"]) + math.sqrt(sp * L["polar"])) / gl - 1
+        th[f"theta_{n}"] = math.degrees(math.acos(cos))
+    r = TECHNIQUES["surface_energy"].run(RunInput(None, th, "owrk", {}))
+    assert r.provides["gamma_s_dispersive_mN_m"] == pytest.approx(sd, rel=1e-6)
+    assert r.provides["gamma_s_polar_mN_m"] == pytest.approx(sp, rel=1e-6)
+    assert r.figures
+
+
+def test_vocg_needs_exactly_three_liquids():
+    with pytest.raises(ValueError, match="exactly three"):
+        TECHNIQUES["surface_energy"].run(RunInput(None, {"theta_water": 80, "theta_diiodomethane": 40}, "vocg", {}))
+    r = TECHNIQUES["surface_energy"].run(RunInput(
+        None, {"theta_water": 80, "theta_diiodomethane": 40, "theta_glycerol": 70}, "vocg", {}))
+    assert r.provides["gamma_s_total_mN_m"] > 0
+
+
+def test_wetting_young_dupre_values_and_session_prefill():
+    t = TECHNIQUES["wetting_solution"]
+    assert next(p for p in t.params if p.key == "gamma_lv_mN_m").from_session == "gamma_cmc_mN_m"
+    r = t.run(RunInput(None, {"gamma_lv_mN_m": 40.0, "theta_deg": 60.0}, "young_dupre", {}))
+    assert r.provides["work_of_adhesion_mN_m"] == pytest.approx(60.0, rel=1e-9)      # 40 (1 + 0.5)
+    assert r.provides["spreading_coefficient_mN_m"] == pytest.approx(-20.0, rel=1e-9)
+    assert "partially wets" in r.conclusion[0]
+
+
+ZETA_P = {"mobility": -3.5, "ionic_strength_M": 0.01, "radius_nm": 2.5, "temperature_K": 298.15,
+          "viscosity_mPas": 0.89, "rel_permittivity": 78.4}
+
+
+def test_zeta_kappa_a_and_henry_limits():
+    from surfactantkit import electrostatics as E
+    r = TECHNIQUES["zeta_potential"].run(RunInput(None, ZETA_P, "swan_furst", {}))
+    ka = 2.5 / E.debye_length(0.01)
+    assert r.provides["kappa_a"] == pytest.approx(ka, rel=1e-9)            # about 0.8: intermediate regime
+    sm = TECHNIQUES["zeta_potential"].run(RunInput(None, ZETA_P, "smoluchowski", {}))
+    # Smoluchowski: zeta = eta mu / (eps eps0), sign kept
+    expected = 0.89e-3 * -3.5e-8 / (78.4 * 8.8541878128e-12) * 1000
+    assert sm.provides["zeta_mV"] == pytest.approx(expected, rel=1e-9)
+    assert any("off by" in w for w in sm.warnings)                          # wrong limit at kappa a ~ 0.8 is flagged
+    hu = TECHNIQUES["zeta_potential"].run(RunInput(None, ZETA_P, "huckel", {}))
+    assert hu.provides["zeta_mV"] == pytest.approx(1.5 * expected, rel=1e-9)
+    assert sm.provides["zeta_mV"] > r.provides["zeta_mV"] > hu.provides["zeta_mV"]   # all negative; full range between
+
+
+def test_zeta_relaxation_refuses_small_kappa_a_and_keeps_sign():
+    with pytest.raises(ValueError, match="kappa a >= 10"):
+        TECHNIQUES["zeta_potential"].run(RunInput(None, ZETA_P, "relaxation", {}))
+    big = dict(ZETA_P, radius_nm=100.0)
+    r = TECHNIQUES["zeta_potential"].run(RunInput(None, big, "relaxation", {}))
+    assert r.provides["zeta_mV"] < 0
+    c = TECHNIQUES["zeta_potential"].run(RunInput(None, big, "compare", {}))
+    assert any(v.label.startswith("Zeta, Relaxation") for v in c.values)
+
+
+def test_solubilization_recovers_synthetic_msr_and_km():
+    rows = load("synthetic_solubilization.csv")
+    data = {"conc": [x[0] for x in rows], "S": [x[1] for x in rows]}
+    r = TECHNIQUES["solubilization"].run(RunInput(data, {"cmc_mM": 8.2, "intrinsic_mM": 0.217}, "slope", {}))
+    assert r.provides["msr"] == pytest.approx(0.05, rel=0.05)              # generated with MSR = 0.05
+    msr = r.provides["msr"]
+    assert r.provides["km"] == pytest.approx((msr / (1 + msr)) / (0.217e-3 / 55.5), rel=1e-9)
+    pw = TECHNIQUES["solubilization"].run(RunInput(data, {"cmc_mM": 8.2, "intrinsic_mM": 0.217}, "pointwise", {}))
+    assert pw.provides["msr"] == pytest.approx(0.05, rel=0.08)
+
+
+def test_solubilization_uses_sourced_solubility_and_refuses_unknown():
+    rows = load("synthetic_solubilization.csv")
+    data = {"conc": [x[0] for x in rows], "S": [x[1] for x in rows]}
+    r = TECHNIQUES["solubilization"].run(RunInput(data, {"cmc_mM": 8.2, "solute": "naphthalene"}, "slope", {}))
+    assert any("reference table" in w for w in r.warnings)
+    with pytest.raises(ValueError, match="water solubility"):
+        TECHNIQUES["solubilization"].run(RunInput(data, {"cmc_mM": 8.2, "solute": "other"}, "slope", {}))
+
+
+def test_hld_scan_recovers_synthetic_cc_and_k_and_feeds_hld_value():
+    rows = load("synthetic_salinity_scan.csv")
+    r = TECHNIQUES["hld_scan"].run(RunInput({"eacn": [x[0] for x in rows], "s_star": [x[1] for x in rows]},
+                                            {"temperature_K": 298.15}, "eacn_scan", {}))
+    assert r.provides["hld_k"] == pytest.approx(0.16, abs=0.01)             # generated with k = 0.16, Cc = 0.5
+    assert r.provides["hld_cc"] == pytest.approx(0.5, abs=0.1)
+    v = TECHNIQUES["hld_value"].run(RunInput(None, {"cc": 0.5, "k": 0.16, "salinity_pct": 3.0, "eacn": 8,
+                                                    "temperature_K": 298.15}, "ionic", {}))
+    assert v.provides["hld"] == pytest.approx(math.log(3.0) - 0.16 * 8 + 0.5, rel=1e-12)
+    s_opt = next(x.value for x in v.values if x.label.startswith("Optimal salinity"))
+    assert s_opt == pytest.approx(math.exp(0.16 * 8 - 0.5), rel=1e-12)
+
+
+def test_hld_preset_nonionic_and_refusals():
+    t = TECHNIQUES["hld_value"]
+    ctab = t.run(RunInput(None, {"preset": "CTAB", "salinity_pct": 1.0, "eacn": 1, "temperature_K": 298.15},
+                          "ionic", {}))
+    assert ctab.provides["hld"] == pytest.approx(0.0 - 0.7 * 1 - 5.7, rel=1e-12)   # Schirone et al. Table 1
+    assert ctab.provides["hld"] < 0 and "Winsor I" in ctab.conclusion[0]
+    ni = t.run(RunInput(None, {"cc": 0.0, "k": 0.15, "b": 0.13, "salinity_pct": 1.0, "eacn": 8,
+                               "temperature_K": 308.15}, "nonionic", {}))
+    assert ni.provides["hld"] == pytest.approx(0.13 - 1.2 + 0.06 * 10, rel=1e-12)  # alpha -0.06, dT = 10 K
+    with pytest.raises(ValueError, match="needs the salinity coefficient b"):
+        t.run(RunInput(None, {"cc": 0, "k": 0.15, "salinity_pct": 1, "eacn": 8}, "nonionic", {}))
+    with pytest.raises(ValueError, match="Enter Cc and k"):
+        t.run(RunInput(None, {"salinity_pct": 1, "eacn": 8}, "ionic", {}))
+
+def test_tier_table_lists_only_functions_the_run_called():
+    t = TECHNIQUES["surface_energy"]
+    used = tiers(t, ["wetting.get_owens_wendt_standard_liquid", "wetting.owens_wendt_solid_surface_energy"])
+    assert [x["tool"] for x in used] == ["owens_wendt_solid_surface_energy"]
+    assert len(tiers(t)) == 2                                   # before a run: every function the technique offers
+    h = tiers(TECHNIQUES["hlb"], ["hlb.hlb_davies_guo_ecl(extra_group_counts={'OH_free': 1})"])
+    assert [x["tool"] for x in h] == ["hlb_davies_guo_ecl"]
+
+
+def test_report_tier_rows_dedupe_and_survive_two_digit_sections():
+    from surfkit_studio import report
+    runs = [{"technique": "wetting_solution", "method": "young_dupre", "values": [], "figures": [],
+             "conclusion": [], "warnings": [], "toolkit_calls": ["wetting.work_of_adhesion"]}] * 11
+    content = report.build_content(runs, {})
+    assert content["sections"][10]["title"].startswith("3.11 Wetting")
+    assert content["sections"][0]["title"].endswith("(Young-Dupre)")      # repeated technique: method named
+    rows = report._tier_rows(content)
+    assert len(rows) == 1 and rows[0][0].startswith("Wetting")

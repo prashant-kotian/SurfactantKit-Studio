@@ -13,13 +13,17 @@ from .catalog import TECHNIQUES
 from .catalog.base import Technique
 
 
+# title words every surfactant question contains; they say nothing about which analysis is meant
+GENERIC = {"surfactant", "surfactants", "micelle", "micelles", "from", "with", "water", "formulation"}
+
+
 def score(msg: str, t: Technique) -> int:
     m = f" {msg.lower()} "
     s = sum(3 for k in t.keywords if k in m)
-    s += sum(1 for w in re.findall(r"[a-z]{4,}", t.title.lower()) if w in m)
+    s += sum(1 for w in re.findall(r"[a-z]{4,}", t.title.lower()) if w in m and w not in GENERIC)
     if t.dataset:   # only whole-word aliases of 4+ letters: "c", "st" matched almost any sentence
         s += sum(1 for col in t.dataset.columns for a in col.aliases
-                 if len(a.strip()) >= 4 and re.search(rf"\b{re.escape(a.strip())}\b", m))
+                 if len(a.strip()) >= 4 and a.strip() not in GENERIC and re.search(rf"\b{re.escape(a.strip())}\b", m))
     return s
 
 
@@ -29,13 +33,16 @@ def route(msg: str, session: dict, llm=None, history: list[dict] | None = None) 
     if llm is not None:
         res = llm.route(msg, session, history)
         if res is not None:
+            kw = keyword_route(msg, session)
+            best = TECHNIQUES[kw["action"]["open"]] if kw["action"] else None
+            if (res["technique"] and best and best.id != res["technique"]
+                    and score(msg, TECHNIQUES[res["technique"]]) == 0 and score(msg, best) >= 3):
+                return {**kw, "engine": "keyword"}     # a named technique beats a pick with no support in the text
             if res["technique"]:
                 t = TECHNIQUES[res["technique"]]
                 body = explain(t, session)
                 reply = f"{res['reply']}\n\n{body}" if res["reply"] else body
                 return {"reply": reply, "action": {"open": t.id}, "engine": "local-ai"}
-            kw = keyword_route(msg, session)
-            best = TECHNIQUES[kw["action"]["open"]] if kw["action"] else None
             if best and score(msg, best) >= 3:      # model unsure but a real keyword matched
                 return {**kw, "engine": "keyword"}
             lead = res["reply"] + "\n\n" if res["reply"] else ""
@@ -64,6 +71,9 @@ def explain(t: Technique, session: dict) -> str:
         parts.append(f"I have opened its panel on the right. Upload a CSV or Excel file with {cols}, "
                      f"at least {t.dataset.min_rows} rows; you will confirm the column mapping and units before "
                      f"anything is computed.")
+    elif t.level in ("structure", "measurement"):
+        what = "the molecule's structure" if t.level == "structure" else "your measured values"
+        parts.append(f"I have opened its panel on the right. Enter {what} there; no file is needed.")
     elif missing:
         need = [u.title for u in TECHNIQUES.values() if any(k in u.produces for k in missing)]
         parts.append("This is a derived analysis. It needs a result you have not produced yet"

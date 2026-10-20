@@ -38,7 +38,7 @@ function renderTree() {
   const item = (t) => {
     const ready = t.level === "derived" && t.missing.length === 0;
     const tag = t.level === "primary" ? "from data" : t.level === "structure" ? "from structure"
-      : ready ? "ready" : `after: ${producers(t.id).join(" or ")}`;
+      : t.level === "measurement" ? "from measured values" : ready ? "ready" : `after: ${producers(t.id).join(" or ")}`;
     return `<li><a data-id="${t.id}" class="${CURRENT === t.id ? "active" : ""}">${esc(t.title)}</a>
       <span class="lvl ${ready ? "ready" : ""}">${esc(tag)}</span></li>`;
   };

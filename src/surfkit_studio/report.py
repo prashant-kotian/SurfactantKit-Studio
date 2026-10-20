@@ -43,17 +43,19 @@ def ascii_only(s: str) -> str:
 def build_content(runs: list[dict], meta: dict) -> dict:
     """One neutral structure that both writers render."""
     sections, refs, followups = [], [], []
+    repeated = {r["technique"] for r in runs if sum(x["technique"] == r["technique"] for x in runs) > 1}
     for i, run in enumerate(runs, 1):
         t = TECHNIQUES[run["technique"]]
         method = next((m for m in t.methods if m.key == run["method"]), None)
+        label = method.label if method else run["method"]
         sections.append({
-            "title": f"3.{i} {t.title}",
+            "title": f"3.{i} {t.title}" + (f" ({label})" if t.id in repeated else ""),
             "method": method.label if method else run["method"],
             "principle": method.principle if method else "",
             "data_note": run.get("data_note", ""),
             "values": run["values"], "figures": run["figures"],
             "conclusion": run["conclusion"], "warnings": run["warnings"],
-            "tiers": tiers(t), "calls": run["toolkit_calls"],
+            "tiers": tiers(t, run["toolkit_calls"]), "calls": run["toolkit_calls"],
         })
         for k in t.citations + ["surfactantkit"]:
             if k not in refs:
@@ -62,6 +64,18 @@ def build_content(runs: list[dict], meta: dict) -> dict:
             if f not in followups:
                 followups.append(f)
     return {"meta": meta, "sections": sections, "refs": citations.for_keys(refs), "followups": followups}
+
+
+def _tier_rows(content: dict) -> list[list[str]]:
+    """One row per (analysis, function), in report order; repeated runs do not repeat rows."""
+    rows, seen = [], set()
+    for s in content["sections"]:
+        name = s["title"].split(" ", 1)[1]
+        for t in s["tiers"]:
+            if (name, t["tool"]) not in seen:
+                seen.add((name, t["tool"]))
+                rows.append([name, t["tool"], t["tier"], t["evidence"] or t["meaning"]])
+    return rows
 
 
 # ------------------------------------------------------------------- DOCX
@@ -169,10 +183,7 @@ def to_docx(content: dict) -> bytes:
                "primary literature; T2 means the equation was checked against its source but no published worked "
                "number exists to match; T3 is an estimate by construction. Tiers describe the method, not your data: "
                "the quality of the measured curve still limits the result.")
-    rows = []
-    for s in content["sections"]:
-        for t in s["tiers"]:
-            rows.append([s["title"][4:], t["tool"], t["tier"], t["evidence"] or t["meaning"]])
+    rows = _tier_rows(content)
     tcount += 1
     _para(doc, f"Table {tcount}. Validation tier of each function used.", 10, indent=False, double=False)
     _table(doc, rows, ["Analysis", "Function", "Tier", "Evidence"])
@@ -274,8 +285,7 @@ def to_pdf(content: dict) -> bytes:
          "literature; T2 means the equation was checked against its source but no published worked number exists to "
          "match; T3 is an estimate by construction. Tiers describe the method, not your data: the quality of the "
          "measured curve still limits the result.")
-    rows = [[s["title"][4:], t["tool"], t["tier"], t["evidence"] or t["meaning"]]
-            for s in content["sections"] for t in s["tiers"]]
+    rows = _tier_rows(content)
     tcount += 1
     para(f"Table {tcount}. Validation tier of each function used.", 10, indent=False, double=False)
     table(rows, ["Analysis", "Function", "Tier", "Evidence"], (3, 4, 1, 6))

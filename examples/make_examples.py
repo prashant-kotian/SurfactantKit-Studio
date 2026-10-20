@@ -82,6 +82,16 @@ def main():
             for c in [0.002, 0.004, 0.006, 0.008, 0.010, 0.012]]
     write("synthetic_sls.csv", ["C - CMC (g/mL)", "Rayleigh ratio (1/cm)"], rows)
 
+    # solubilization: naphthalene-like solute, S_w = 0.217 mM, CMC = 8.2 mM, MSR = 0.05, 1% noise
+    sw, cmc, msr = 0.217, 8.2, 0.05
+    rows = [(c, round((sw if c <= cmc else sw + msr * (c - cmc)) * (1 + rnd.gauss(0, 0.01)), 4))
+            for c in [2, 5, 10, 15, 20, 30, 40, 60]]
+    write("synthetic_solubilization.csv", ["Surfactant (mM)", "Solubilized solute (mM)"], rows)
+
+    # HLD salinity scan (ionic form, 25 C): k = 0.16, Cc = 0.5, i.e. ln S* = 0.16 EACN - 0.5, 1% noise
+    rows = [(e, round(math.exp(0.16 * e - 0.5) * (1 + rnd.gauss(0, 0.01)), 3)) for e in [6, 8, 10, 12, 14]]
+    write("synthetic_salinity_scan.csv", ["EACN", "Optimal salinity S* (g/100 mL)"], rows)
+
 
 if __name__ == "__main__":
     main()

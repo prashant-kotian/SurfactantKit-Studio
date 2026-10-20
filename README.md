@@ -23,8 +23,16 @@ a tested Python library.
 | Micelle size and shape | Aggregation number | fluorescence quenching series | Turro-Yekta |
 | Micelle size and shape | Aggregation number, micelle molar mass, A2 | SLS Rayleigh ratios | Debye plot |
 | Micelle size and shape | Packing parameter and shape | from the surface-excess result | Tanford + Israelachvili |
+| Formulation | HLB | molecular structure | Griffin, Davies group numbers, Guo-Rong-Ying (CnEm) |
+| Formulation | Cc and k (HLD salinity scan) | optimal salinity vs oil EACN | ln S* vs EACN fit |
+| Formulation | HLD of a formulation, optimal salinity | Cc, k, salinity, EACN, temperature | ionic (ln S) or nonionic (b S) form; cationic quat presets |
+| Wetting and surfaces | Solid surface energy | contact angles of standard probe liquids | Owens-Wendt-Rabel-Kaelble, van Oss-Chaudhury-Good |
+| Wetting and surfaces | Work of adhesion, spreading coefficient | surface tension and contact angle | Young-Dupre |
+| Electrokinetics | Zeta potential | electrophoretic mobility, ionic strength, radius | Henry (Swan-Furst, Ohshima), Smoluchowski, Hueckel, relaxation-corrected, compare all |
+| Solubilization | MSR and micelle-water partition coefficient | solubilized solute vs surfactant concentration | slope above CMC, point-by-point |
 
-Techniques form a tree: primary ones run from raw data, derived ones become available once their inputs
+Techniques form a tree: primary ones run from raw data, structure and measurement ones from a few typed-in
+values, and derived ones become available once their inputs
 exist in your session (the right-hand panel shows which are ready).
 
 For an ionic surfactant the free energy uses `Delta G_mic = (1 + beta) RT ln X_cmc`, with beta the degree of
@@ -54,7 +62,7 @@ The model only decides which analysis a request is about and adds a sentence. It
 computes, states numbers or cites: replies containing digits or citation-like text are
 discarded, and everything substantive (principle, methods, results, accuracy, references)
 comes from the toolkit and the catalog. Without Ollama the chat uses keyword matching.
-Routing accuracy on 37 realistic requests (`tests/eval_router.py`): 34/37 with qwen3:1.7b
+Routing accuracy on 48 realistic requests (`tests/eval_router.py`): 45/48 with qwen3:1.7b
 plus keyword fallback, 0 replies containing numbers.
 
 ## Install and run
@@ -74,8 +82,8 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
 1. **Core** (done): techniques, data import with unit checks, plots, conclusions, tiers,
    citations, DOCX/PDF report, keyword chat.
 2. **Local chat model** (done): Ollama routing with keyword fallback, evaluated.
-3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter.
-   Next: HLB/HLD, electrostatics, wetting, solubilization, dynamic surface tension, foam.
+3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter,
+   HLB, HLD, wetting and surface energy, zeta potential, solubilization. Next: dynamic surface tension, foam.
 4. **Optional web search** (off by default): only your search words leave the computer, never your data.
 
 ## Development

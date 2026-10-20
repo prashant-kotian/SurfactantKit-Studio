@@ -138,7 +138,7 @@ def run(req: RunRequest):
     return {**{k: v for k, v in record.items() if k != "figures"},
             "figures": [{"name": f["name"], "caption": f["caption"],
                          "png": base64.b64encode(f["png"]).decode()} for f in record["figures"]],
-            "followups": t.followups, "citations": citations.for_keys(t.citations), "tiers": tiers(t),
+            "followups": t.followups, "citations": citations.for_keys(t.citations), "tiers": tiers(t, r.toolkit_calls),
             "ready_next": [{"id": u.id, "title": u.title} for u in now_ready], "run_index": len(s["runs"]) - 1}
 
 

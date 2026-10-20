@@ -239,7 +239,7 @@ CMC_TENSIOMETRY = Technique(
     tools=["cmc_from_surface_tension_curve", "bootstrap_cmc", "cmc_via_szyszkowski_deviation"],
     citations=["rosen_kunjappu_2012", "szyszkowski_1908"],
     produces=["cmc_mM", "premicellar_slope_ln", "gamma0_mN_m", "tensiometry_pre_c", "tensiometry_pre_g"],
-    unlocks=["surface_excess", "isotherm_selection", "gibbs_energy_micellization"],
+    unlocks=["surface_excess", "isotherm_selection", "gibbs_energy_micellization", "wetting_solution"],
     followups=[
         "Compute the maximum surface excess and area per molecule from the pre-CMC slope (Gibbs).",
         "Check whether adsorption is ideal (Langmuir) or shows lateral interaction (Frumkin).",

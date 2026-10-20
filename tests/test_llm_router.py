@@ -51,3 +51,18 @@ def test_system_prompt_lists_every_technique_and_forbids_numbers():
     from surfkit_studio.catalog import TECHNIQUES
     assert all(tid in p for tid in TECHNIQUES)
     assert "never write any number" in p
+
+
+def test_named_technique_beats_a_model_pick_with_no_support_in_the_text():
+    r = router.route("how efficient is my surfactant, pC20?", {},
+                     FakeLLM({"technique": "surface_excess", "intent": "run", "reply": "Let us look at packing."}))
+    assert r["action"] == {"open": "cmc_tensiometry"} and r["engine"] == "keyword"
+    # but a model pick the text supports is kept, even when keywords point elsewhere
+    r = router.route("do adsorbed molecules interact laterally", {},
+                     FakeLLM({"technique": "isotherm_selection", "intent": "run", "reply": ""}))
+    assert r["action"] == {"open": "isotherm_selection"}
+
+
+def test_generic_words_alone_route_nowhere():
+    # "surfactant" appears in titles and column aliases; on its own it must not open a panel
+    assert router.keyword_route("how tightly packed is my surfactant at the interface", {})["action"] is None

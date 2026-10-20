@@ -80,6 +80,56 @@ REFERENCES: dict[str, dict] = {
         "doi": "10.1016/j.jcis.2005.12.009",
         "verified": True, "checked": "2026-10-20, PubMed 16414065 and ScienceDirect record",
     },
+    "owens_wendt_1969": {
+        "text": "Owens, D. K.; Wendt, R. C. Estimation of the Surface Free Energy of Polymers. J. Appl. Polym. Sci. "
+                "1969, 13, 1741-1747.",
+        "doi": "10.1002/app.1969.070130815",
+        "verified": True, "checked": "2026-10-20, Wiley Online Library record",
+    },
+    "van_oss_1988": {
+        "text": "van Oss, C. J.; Chaudhury, M. K.; Good, R. J. Interfacial Lifshitz-van der Waals and Polar "
+                "Interactions in Macroscopic Systems. Chem. Rev. 1988, 88, 927-941.",
+        "doi": "10.1021/cr00088a006",
+        "verified": True, "checked": "2026-10-20, ACS Publications record and Semantic Scholar DOI",
+    },
+    "ohshima_1994": {
+        "text": "Ohshima, H. A Simple Expression for Henry's Function for the Retardation Effect in Electrophoresis "
+                "of Spherical Colloidal Particles. J. Colloid Interface Sci. 1994, 168, 269-271.",
+        "doi": "10.1006/jcis.1994.1419",
+        "verified": True, "checked": "2026-10-20, ScienceDirect record and SCIRP reference list",
+    },
+    "swan_furst_2012": {
+        "text": "Swan, J. W.; Furst, E. M. A Simpler Expression for Henry's Function Describing the Electrophoretic "
+                "Mobility of Spherical Colloids. J. Colloid Interface Sci. 2012, 388, 92-94.",
+        "doi": "10.1016/j.jcis.2012.08.026",
+        "verified": True, "checked": "2026-10-20, PubMed 22995247 and ScienceDirect record",
+    },
+    "ohshima_healy_white_1983": {
+        "text": "Ohshima, H.; Healy, T. W.; White, L. R. Approximate Analytic Expressions for the Electrophoretic "
+                "Mobility of Spherical Colloidal Particles and the Conductivity of Their Dilute Suspensions. "
+                "J. Chem. Soc., Faraday Trans. 2 1983, 79, 1613-1628.",
+        "doi": "10.1039/F29837901613",
+        "verified": True, "checked": "2026-10-20, RSC Publishing record (citation metadata)",
+    },
+    "edwards_1991": {
+        "text": "Edwards, D. A.; Luthy, R. G.; Liu, Z. Solubilization of Polycyclic Aromatic Hydrocarbons in "
+                "Micellar Nonionic Surfactant Solutions. Environ. Sci. Technol. 1991, 25, 127-133.",
+        "doi": "10.1021/es00013a014",
+        "verified": True, "checked": "2026-10-20, ACS Publications record",
+    },
+    "salager_1979": {
+        "text": "Salager, J. L.; Morgan, J. C.; Schechter, R. S.; Wade, W. H.; Vasquez, E. Optimum Formulation of "
+                "Surfactant/Water/Oil Systems for Minimum Interfacial Tension or Phase Behavior. Soc. Pet. Eng. J. "
+                "1979, 19, 107-115.",
+        "doi": "",
+        "verified": True, "checked": "2026-10-20, OnePetro record and J. Surfactants Deterg. reference list (DOI not confirmed, omitted)",
+    },
+    "schirone_2021": {
+        "text": "Schirone, D.; Tartaro, G.; Gentile, L.; Palazzo, G. An HLD Framework for Cationic Ammonium "
+                "Surfactants. JCIS Open 2021, 4, 100033.",
+        "doi": "10.1016/j.jciso.2021.100033",
+        "verified": True, "checked": "2026-10-20, ScienceDirect record",
+    },
     "surfactantkit": {
         "text": "Kotian, P. D. SurfactantKit: surfactant and interfacial-science theory as a tested Python "
                 "library. Software, 2026.",

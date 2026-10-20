@@ -102,6 +102,7 @@ class Technique:
     category: str
     title: str
     level: str                               # "primary" (raw data) | "derived" (earlier results) | "structure" (molecule)
+                                             # | "measurement" (a few measured numbers typed in, no curve)
     summary: str
     run: Callable[[RunInput], RunResult]
     dataset: DatasetSpec | None = None
