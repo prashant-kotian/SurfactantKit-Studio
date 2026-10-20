@@ -62,6 +62,24 @@ REFERENCES: dict[str, dict] = {
         "doi": "10.1021/j100665a018",
         "verified": True, "checked": "2026-10-20, ACS Publications record",
     },
+    "griffin_1949": {
+        "text": "Griffin, W. C. Classification of Surface-Active Agents by \"HLB\". J. Soc. Cosmet. Chem. 1949, 1, "
+                "311-326.",
+        "doi": "",
+        "verified": True, "checked": "2026-10-20, SCC online library record and citing references",
+    },
+    "davies_1957": {
+        "text": "Davies, J. T. A Quantitative Kinetic Theory of Emulsion Type. I. Physical Chemistry of the "
+                "Emulsifying Agent. In Proceedings of the 2nd International Congress of Surface Activity; 1957.",
+        "doi": "",
+        "verified": True, "checked": "2026-10-20, chapter PDF title and citing references (pages not confirmed, omitted)",
+    },
+    "guo_2006": {
+        "text": "Guo, X.; Rong, Z.; Ying, X. Calculation of Hydrophile-Lipophile Balance for Polyethoxylated "
+                "Surfactants by Group Contribution Method. J. Colloid Interface Sci. 2006, 298, 441-450.",
+        "doi": "10.1016/j.jcis.2005.12.009",
+        "verified": True, "checked": "2026-10-20, PubMed 16414065 and ScienceDirect record",
+    },
     "surfactantkit": {
         "text": "Kotian, P. D. SurfactantKit: surfactant and interfacial-science theory as a tested Python "
                 "library. Software, 2026.",

@@ -140,6 +140,20 @@ def test_packing_parameter_from_sds_area():
     assert any("guide, not a measurement" in c for c in r.conclusion)
 
 
+def test_hlb_three_methods_and_honest_refusal():
+    t = TECHNIQUES["hlb"]
+    # Griffin, C12E8 (dodecyl octaethylene glycol ether): EO8 = 8 x 44.05 = 352.4 g/mol of 538.8 total
+    g = t.run(RunInput(None, {"mw_hydrophilic": 352.4, "mw_total": 538.8}, "griffin", {}))
+    assert g.provides["hlb"] == pytest.approx(20 * 352.4 / 538.8, rel=1e-6)
+    assert any("oil-in-water emulsifier" in c for c in g.conclusion)
+    d = t.run(RunInput(None, {"groups": "SO4Na: 1, CH2: 11, CH3: 1"}, "davies", {}))    # SDS
+    assert d.provides["hlb"] == pytest.approx(40.0, abs=0.5)                           # Davies' classic SDS value
+    with pytest.raises(ValueError, match="No verified Davies group number"):
+        t.run(RunInput(None, {"groups": "AmidoAmine: 1, CH2: 11"}, "davies", {}))
+    e = t.run(RunInput(None, {"n_carbons": 12, "n_eo": 8}, "guo", {}))      # C12E8, HLB ~13 in practice
+    assert 11.5 < e.provides["hlb"] < 14.5
+
+
 def test_tree_is_rooted_in_primary_techniques_and_every_unlock_exists():
     for cat in tree():
         for t in cat["techniques"]:
@@ -147,8 +161,10 @@ def test_tree_is_rooted_in_primary_techniques_and_every_unlock_exists():
                 assert u["id"] in TECHNIQUES
     for t in TECHNIQUES.values():
         assert all(u in TECHNIQUES for u in t.unlocks)
-        assert t.level in ("primary", "derived")
-        assert (t.dataset is None) == (t.level == "derived")
+        assert t.level in ("primary", "derived", "structure")
+        assert (t.dataset is not None) == (t.level == "primary")
+        if t.level == "structure":
+            assert not t.requires
 
 
 def test_every_technique_reports_tiers_and_only_verified_citations():

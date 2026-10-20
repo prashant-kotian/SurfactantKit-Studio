@@ -37,7 +37,7 @@ function renderTree() {
   const producers = (id) => Object.values(T).filter((p) => p.unlocks.some((u) => u.id === id)).map((p) => p.title);
   const item = (t) => {
     const ready = t.level === "derived" && t.missing.length === 0;
-    const tag = t.level === "primary" ? "from data"
+    const tag = t.level === "primary" ? "from data" : t.level === "structure" ? "from structure"
       : ready ? "ready" : `after: ${producers(t.id).join(" or ")}`;
     return `<li><a data-id="${t.id}" class="${CURRENT === t.id ? "active" : ""}">${esc(t.title)}</a>
       <span class="lvl ${ready ? "ready" : ""}">${esc(tag)}</span></li>`;
@@ -59,6 +59,8 @@ function openTechnique(id) {
   const params = t.params.map((p) => {
     const input = p.kind === "choice"
       ? `<select name="${p.key}"><option value="">${p.required ? "choose..." : "(not set)"}</option>${p.choices.map(([v, l]) => `<option value="${v}" ${v === p.value ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`
+      : p.kind === "text"
+      ? `<input name="${p.key}" type="text" size="34" placeholder="${esc(p.help)}" value="${esc(p.value ?? "")}">`
       : `<input name="${p.key}" type="number" step="any" value="${p.value ?? ""}"> ${esc(p.unit)}`;
     return `<div class="row"><label title="${esc(p.help)}">${esc(p.label)}${p.required ? "" : " (optional)"}</label>${input}</div>`;
   }).join("");

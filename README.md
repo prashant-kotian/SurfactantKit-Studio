@@ -19,6 +19,10 @@ a tested Python library.
 | Adsorption | Langmuir vs Frumkin adsorption | from the CMC analysis | BIC model selection |
 | Thermodynamics | Free energy of micellization | from a CMC (and beta) | nonionic or ionic with counterion binding |
 | Thermodynamics | Enthalpy, entropy, heat capacity | CMC at 3+ temperatures | multi-point Gibbs-Helmholtz fit |
+| Mixtures | Mixed micelles: ideal or interacting? | mixture CMC vs mole fraction | Clint vs Rubingh vs EOMMM by BIC; beta, micellar composition, activity coefficients, excess free energy, synergism criterion |
+| Micelle size and shape | Aggregation number | fluorescence quenching series | Turro-Yekta |
+| Micelle size and shape | Aggregation number, micelle molar mass, A2 | SLS Rayleigh ratios | Debye plot |
+| Micelle size and shape | Packing parameter and shape | from the surface-excess result | Tanford + Israelachvili |
 
 Techniques form a tree: primary ones run from raw data, derived ones become available once their inputs
 exist in your session (the right-hand panel shows which are ready).
@@ -38,6 +42,21 @@ counterion binding (Zana, Langmuir 1996, 12, 1208).
 - **No guessing.** An ionic surfactant's free energy is not computed without beta; Gamma_max is not
   computed without the electrolyte condition.
 
+## Local AI chat (optional)
+
+Install [Ollama](https://ollama.com) and pull a small model:
+
+```bash
+ollama pull qwen3:1.7b        # ~1.4 GB; any Ollama model works (set SURFKIT_MODEL)
+```
+
+The model only decides which analysis a request is about and adds a sentence. It never
+computes, states numbers or cites: replies containing digits or citation-like text are
+discarded, and everything substantive (principle, methods, results, accuracy, references)
+comes from the toolkit and the catalog. Without Ollama the chat uses keyword matching.
+Routing accuracy on 37 realistic requests (`tests/eval_router.py`): 34/37 with qwen3:1.7b
+plus keyword fallback, 0 replies containing numbers.
+
 ## Install and run
 
 ```bash
@@ -52,13 +71,11 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
 
 ## Roadmap
 
-1. **Core** (this release): techniques, data import with unit checks, plots, conclusions, tiers,
+1. **Core** (done): techniques, data import with unit checks, plots, conclusions, tiers,
    citations, DOCX/PDF report, keyword chat.
-2. **Local chat model** via [Ollama](https://ollama.com) (small models such as Qwen3 4B): understands free-text
-   requests, opens the right panel, explains the principle, asks which method, suggests follow-ups.
-   Numbers in chat always come from tool results, never from the model.
-3. **More techniques**: mixed micelles (Clint, Rubingh, model selection), aggregation number, packing
-   parameter, HLB/HLD, electrostatics, wetting, solubilization, dynamic surface tension, foam.
+2. **Local chat model** (done): Ollama routing with keyword fallback, evaluated.
+3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter.
+   Next: HLB/HLD, electrostatics, wetting, solubilization, dynamic surface tension, foam.
 4. **Optional web search** (off by default): only your search words leave the computer, never your data.
 
 ## Development

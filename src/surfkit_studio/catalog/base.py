@@ -35,7 +35,7 @@ class DatasetSpec:
 class Param:
     key: str
     label: str
-    kind: str                        # "float" | "choice"
+    kind: str                        # "float" | "choice" | "text"
     unit: str = ""
     default: Any = None
     choices: list[tuple[str, str]] = field(default_factory=list)   # (value, label)
@@ -101,7 +101,7 @@ class Technique:
     id: str
     category: str
     title: str
-    level: str                               # "primary" (from raw data) | "derived" (from earlier results)
+    level: str                               # "primary" (raw data) | "derived" (earlier results) | "structure" (molecule)
     summary: str
     run: Callable[[RunInput], RunResult]
     dataset: DatasetSpec | None = None
