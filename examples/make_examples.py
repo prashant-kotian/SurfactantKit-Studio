@@ -68,6 +68,20 @@ def main():
         rows.append((a, round(mix_cmc((lo + hi) / 2)[0] * (1 + rnd.gauss(0, 0.005)), 4)))
     write("synthetic_mixed_cmc.csv", ["alpha1 (mole fraction)", "CMC mix (mM)"], rows)
 
+    # fluorescence quenching: N = 60, Ct = 20 mM, CMC = 8 mM, I0 = 1000, 0.5% noise (Turro-Yekta)
+    rows = [(q, round(1000 * math.exp(-60 * q / 12.0) * (1 + rnd.gauss(0, 0.005)), 2))
+            for q in [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15]]
+    write("synthetic_quenching.csv", ["Quencher (mM)", "Intensity (a.u.)"], rows)
+
+    # SLS Debye plot: N = 60, monomer 288.38 g/mol (SDS), A2 = 4e-4 cm^3 mol/g^2,
+    # dn/dc = 0.12 mL/g, 632.8 nm, n = 1.333
+    Mw, A2 = 60 * 288.38, 4e-4
+    lam = 632.8e-7
+    K = 4 * math.pi ** 2 * 1.333 ** 2 * 0.12 ** 2 / (6.02214076e23 * lam ** 4)
+    rows = [(c, float(f"{K * c / (1 / Mw + 2 * A2 * c) * (1 + rnd.gauss(0, 0.003)):.5e}"))
+            for c in [0.002, 0.004, 0.006, 0.008, 0.010, 0.012]]
+    write("synthetic_sls.csv", ["C - CMC (g/mL)", "Rayleigh ratio (1/cm)"], rows)
+
 
 if __name__ == "__main__":
     main()

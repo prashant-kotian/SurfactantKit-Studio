@@ -45,6 +45,23 @@ REFERENCES: dict[str, dict] = {
         "doi": "10.1007/978-1-4615-7880-2",
         "verified": True, "checked": "2026-10-20, Springer book record (chapter pages 337-354); DOI is the book's",
     },
+    "turro_yekta_1978": {
+        "text": "Turro, N. J.; Yekta, A. Luminescent Probes for Detergent Solutions. A Simple Procedure for "
+                "Determination of the Mean Aggregation Number of Micelles. J. Am. Chem. Soc. 1978, 100, 5951-5952.",
+        "doi": "10.1021/ja00486a062",
+        "verified": True, "checked": "2026-10-20, ACS Publications record",
+    },
+    "israelachvili_1976": {
+        "text": "Israelachvili, J. N.; Mitchell, D. J.; Ninham, B. W. Theory of Self-Assembly of Hydrocarbon "
+                "Amphiphiles into Micelles and Bilayers. J. Chem. Soc., Faraday Trans. 2 1976, 72, 1525-1568.",
+        "doi": "10.1039/F29767201525",
+        "verified": True, "checked": "2026-10-20, RSC Publishing record",
+    },
+    "tanford_1972": {
+        "text": "Tanford, C. Micelle Shape and Size. J. Phys. Chem. 1972, 76, 3020-3024.",
+        "doi": "10.1021/j100665a018",
+        "verified": True, "checked": "2026-10-20, ACS Publications record",
+    },
     "surfactantkit": {
         "text": "Kotian, P. D. SurfactantKit: surfactant and interfacial-science theory as a tested Python "
                 "library. Software, 2026.",

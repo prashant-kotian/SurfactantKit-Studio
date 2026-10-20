@@ -288,9 +288,11 @@ SURFACE_EXCESS = Technique(
                     "Gamma_max = -(1 / nRT) d gamma / d ln C, using the slope just below the CMC.",
                     "Standard route whenever the pre-CMC region is linear in log C.")],
     requires=["premicellar_slope_ln"], run=run_surface_excess,
-    tools=["gibbs_gamma_max", "gibbs_a_min"], citations=["rosen_kunjappu_2012"], produces=["gamma_max_mol_m2"],
-    unlocks=["isotherm_selection"],
-    followups=["Test Langmuir vs Frumkin adsorption with these values held fixed."],
+    tools=["gibbs_gamma_max", "gibbs_a_min"], citations=["rosen_kunjappu_2012"],
+    produces=["gamma_max_mol_m2", "a_min_nm2"],
+    unlocks=["isotherm_selection", "packing_parameter"],
+    followups=["Test Langmuir vs Frumkin adsorption with these values held fixed.",
+               "Estimate the packing parameter and expected micelle shape from A_min and the tail length."],
     keywords=["surface excess", "gamma max", "area per molecule", "amin", "gibbs", "packing"],
 )
 

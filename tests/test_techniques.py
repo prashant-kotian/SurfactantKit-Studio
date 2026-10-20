@@ -118,6 +118,28 @@ def test_mixed_micelles_rejects_pure_components_in_series():
                                                   {"cmc1_mM": 14.8, "cmc2_mM": 8.0, "temperature_K": 298.15}, "bic", {}))
 
 
+def test_quenching_recovers_synthetic_aggregation_number():
+    rows = load("synthetic_quenching.csv")
+    r = TECHNIQUES["aggregation_quenching"].run(RunInput(
+        {"q": [x[0] for x in rows], "I": [x[1] for x in rows]},
+        {"I0": 1000, "total_surfactant_mM": 20, "cmc_mM": 8}, "turro_yekta", {}))
+    assert r.provides["aggregation_number"] == pytest.approx(60, rel=0.03)
+
+
+def test_sls_recovers_synthetic_aggregation_number():
+    rows = load("synthetic_sls.csv")
+    r = TECHNIQUES["aggregation_sls"].run(RunInput(
+        {"c": [x[0] for x in rows], "R": [x[1] for x in rows]},
+        {"dn_dc": 0.12, "wavelength_nm": 632.8, "monomer_mw": 288.38, "n_solvent": 1.333}, "debye", {}))
+    assert r.provides["aggregation_number"] == pytest.approx(60, rel=0.05)
+
+
+def test_packing_parameter_from_sds_area():
+    r = TECHNIQUES["packing_parameter"].run(RunInput(None, {"n_carbons": 12}, "israelachvili", {"a_min_nm2": 0.488}))
+    assert r.provides["cpp"] == pytest.approx(350.2 / (48.8 * 16.7), rel=0.02)   # Tanford v and lc for C12
+    assert any("guide, not a measurement" in c for c in r.conclusion)
+
+
 def test_tree_is_rooted_in_primary_techniques_and_every_unlock_exists():
     for cat in tree():
         for t in cat["techniques"]:
