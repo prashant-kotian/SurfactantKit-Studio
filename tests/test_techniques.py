@@ -302,3 +302,99 @@ def test_report_tier_rows_dedupe_and_survive_two_digit_sections():
     assert content["sections"][0]["title"].endswith("(Young-Dupre)")      # repeated technique: method named
     rows = report._tier_rows(content)
     assert len(rows) == 1 and rows[0][0].startswith("Wetting")
+
+# ------------------------------------------------- dynamic tension and foam
+def test_dynamic_tension_rosen_hua_recovers_synthetic():
+    rows = load("synthetic_dynamic_tension.csv")
+    data = {"t": [x[0] for x in rows], "gamma": [x[1] for x in rows]}
+    r = TECHNIQUES["dynamic_tension"].run(RunInput(data, {"gamma0_mN_m": 72.0}, "rosen_hua", {}))
+    vals = {v.label: v.value for v in r.values}
+    assert r.provides["dst_t_star_s"] == pytest.approx(0.05, rel=0.1)          # generated: t* 0.05 s, n 0.8, 40 mN/m
+    assert vals["Exponent n"] == pytest.approx(0.8, rel=0.1)
+    assert vals["Meso-equilibrium tension, gamma_m"] == pytest.approx(40.0, abs=1.0)
+    reg = TECHNIQUES["dynamic_tension"].run(RunInput(data, {"gamma0_mN_m": 72.0}, "regime", {}))
+    assert reg.provides["dst_tau_d_s"] > 0 and reg.figures
+
+
+def test_dynamic_tension_ward_tordai_recovers_forward_model():
+    from surfactantkit.dynamic_tension import dynamic_surface_tension_forward
+    # same truth as the toolkit's own O3 test: D 6e-11 m^2/s, K 500 /M, Gamma_max 4e-6, k_off 0.5 /s, c0 5 mM
+    t = [0.1 * 10 ** (1.7 * i / 19) for i in range(20)]
+    fwd = dynamic_surface_tension_forward(t, 5e-3, 6e-11, 500.0, 4e-6, 72.0, 1.0, 298.15, k_off_per_s=0.5)
+    data = {"t": t, "gamma": list(fwd.gamma_mN_per_m)}
+    r = TECHNIQUES["dynamic_tension"].run(RunInput(
+        data, {"gamma0_mN_m": 72.0, "c0_mM": 5.0, "system_type": "nonionic", "temperature_K": 298.15,
+               "gamma_max_source": "session"}, "ward_tordai", {"gamma_max_mol_m2": 4e-6}))
+    vals = {v.label: v.value for v in r.values}
+    assert vals["Gamma_max"] == pytest.approx(4e-6)                             # fixed from the session
+    assert vals["R^2"] > 0.999
+    assert r.provides["dst_D_m2_s"] == pytest.approx(6e-11, rel=0.3)
+
+
+def test_dynamic_tension_refuses_tension_above_gamma0_and_missing_inputs():
+    data = {"t": [0.01, 0.1, 1, 2, 5, 10], "gamma": [70, 65, 60, 58, 56, 55]}
+    with pytest.raises(ValueError, match="below gamma0"):
+        TECHNIQUES["dynamic_tension"].run(RunInput(data, {"gamma0_mN_m": 60.0}, "rosen_hua", {}))
+    with pytest.raises(ValueError, match="bulk surfactant concentration"):
+        TECHNIQUES["dynamic_tension"].run(RunInput(data, {"gamma0_mN_m": 72.0}, "ward_tordai", {}))
+
+
+def test_foam_decay_recovers_half_life_and_ross_miles_summary():
+    rows = load("synthetic_foam_decay.csv")
+    r = TECHNIQUES["foam_decay"].run(RunInput({"t": [x[0] for x in rows], "h": [x[1] for x in rows]}, {}, "bic", {}))
+    vals = {v.label: v.value for v in r.values}
+    assert r.provides["foam_half_life_min"] == pytest.approx(4.0, rel=0.05)    # generated: half-life 4 min
+    assert vals["Better decay model (BIC)"] == "exponential"
+    assert vals["Initial foam height (t = 0)"] == pytest.approx(rows[0][1])
+    assert "Height at 5 min" in " ".join(vals)
+
+
+def test_bikerman_index_is_volume_over_flow():
+    r = TECHNIQUES["foam_bikerman"].run(RunInput(None, {"foam_volume_mL": 150, "gas_flow_mL_s": 2.5}, "bikerman", {}))
+    assert r.provides["bikerman_sigma_s"] == pytest.approx(60.0)
+
+
+def test_foam_elasticity_chains_from_the_isotherm_and_matches_the_toolkit():
+    from surfactantkit.foam import foam_stability_elasticity_summary
+    s = dict(TECHNIQUES["cmc_tensiometry"].run(RunInput(sds(), IONIC, "rss", {})).provides)
+    s.update(TECHNIQUES["surface_excess"].run(RunInput(None, IONIC, "gibbs", s)).provides)
+    s["tensiometry_pre_c"] = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2]        # isotherm needs 4+ pre-CMC points
+    s["tensiometry_pre_g"] = [71.0, 70.0, 68.0, 65.0, 60.5, 54.5]
+    s.update(TECHNIQUES["isotherm_selection"].run(RunInput(None, IONIC, "bic", s)).provides)
+    assert s["isotherm_K_per_mM"] > 0
+    r = TECHNIQUES["foam_elasticity"].run(RunInput(
+        None, {**IONIC, "concentrations_mM": "0.5, 1, 2"}, "gibbs_marangoni", s))
+    direct = foam_stability_elasticity_summary(1.0, s["gamma_max_mol_m2"], s["isotherm_K_per_mM"],
+                                               "ionic_no_added_salt", s["isotherm_a"], 298.15)
+    e1 = next(v.value for v in r.values if v.label.startswith("E0 at 1 mM"))
+    assert e1 == pytest.approx(direct.gibbs_marangoni_elasticity_mN_per_m, rel=1e-12)
+    with pytest.raises(ValueError, match="positive concentrations"):
+        TECHNIQUES["foam_elasticity"].run(RunInput(None, {**IONIC, "concentrations_mM": ""}, "gibbs_marangoni", s))
+
+
+def test_column_specific_unit_factors():
+    import pandas as pd
+    from surfkit_studio import data_io
+    from surfkit_studio.catalog.foam import DECAY
+    df = pd.DataFrame({"Time (s)": [0, 60, 120], "Foam height (cm)": [18.0, 15.0, 12.0]})
+    m = data_io.suggest_mapping(df, DECAY)["mapping"]
+    assert m["t"]["unit"] == "s" and m["h"]["unit"] == "cm"
+    data, notes = data_io.extract(df, DECAY, m)
+    assert data["t"] == [0.0, 1.0, 2.0] and data["h"] == [180.0, 150.0, 120.0]
+
+
+def test_report_lists_kept_literature_as_further_reading_not_references():
+    import io as _io
+    from docx import Document
+    from surfkit_studio import report
+    runs = [{"technique": "foam_bikerman", "method": "bikerman", "values": [], "figures": [], "conclusion": ["c"],
+             "warnings": [], "toolkit_calls": ["foam.bikerman_foaminess_index"]}]
+    lit = [{"title": "Foams \u2013 a r\u00e9view", "authors": ["J. M\u00fcller"], "more_authors": True, "venue": "J",
+            "year": 2020, "doi": "10.1/x", "source": "OpenAlex", "query": "foam"}]
+    content = report.build_content(runs, report.default_meta("S"), lit)
+    text = "\n".join(p.text for p in Document(_io.BytesIO(report.to_docx(content))).paragraphs)
+    assert "6. Further reading found by literature search" in text and "not cited" in text
+    assert "J. Muller et al.. Foams - a review" in text.replace(". .", "..") or "J. Muller et al" in text
+    refs = text.split("References", 1)[1]
+    assert "Foams" not in refs                                    # never mixed into the checked references
+    assert report.to_pdf(content)[:5] == b"%PDF-"

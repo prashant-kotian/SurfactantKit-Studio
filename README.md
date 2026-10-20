@@ -30,6 +30,10 @@ a tested Python library.
 | Wetting and surfaces | Work of adhesion, spreading coefficient | surface tension and contact angle | Young-Dupre |
 | Electrokinetics | Zeta potential | electrophoretic mobility, ionic strength, radius | Henry (Swan-Furst, Ohshima), Smoluchowski, Hueckel, relaxation-corrected, compare all |
 | Solubilization | MSR and micelle-water partition coefficient | solubilized solute vs surfactant concentration | slope above CMC, point-by-point |
+| Dynamic surface tension | Adsorption speed (t*, regime, D) | tension vs surface age | Rosen-Hua, diffusion vs kinetic control (BIC), Ward-Tordai fit of D, K, Gamma_max |
+| Foam | Foam stability | foam height vs time (Ross-Miles) | Ross-Miles summary; exponential vs logarithmic decay by BIC |
+| Foam | Foaminess | steady foam volume and gas flow | Bikerman index |
+| Foam | Film elasticity | from the isotherm analysis | Gibbs-Marangoni elasticity (Langmuir or Frumkin) |
 
 Techniques form a tree: primary ones run from raw data, structure and measurement ones from a few typed-in
 values, and derived ones become available once their inputs
@@ -62,7 +66,7 @@ The model only decides which analysis a request is about and adds a sentence. It
 computes, states numbers or cites: replies containing digits or citation-like text are
 discarded, and everything substantive (principle, methods, results, accuracy, references)
 comes from the toolkit and the catalog. Without Ollama the chat uses keyword matching.
-Routing accuracy on 48 realistic requests (`tests/eval_router.py`): 45/48 with qwen3:1.7b
+Routing accuracy on 54 realistic requests (`tests/eval_router.py`): 51/54 with qwen3:1.7b
 plus keyword fallback, 0 replies containing numbers.
 
 ## Literature search (optional, off by default)
@@ -74,6 +78,16 @@ by accident. Results are listed as search hits, not as checked citations. OpenAl
 key on a small shared daily budget; set a free key in `SURFKIT_OPENALEX_KEY` for regular use.
 
 ## Install and run
+
+**Windows:** double-click `install_windows.bat` once, then `run_studio.bat` to start (opens http://127.0.0.1:8770).
+**macOS / Linux:** `./install.sh` once, then `./run_studio.sh`.
+
+Both need Python 3.10 or newer and create a private environment in `.venv`; nothing is installed
+system-wide. SurfactantKit is installed from GitHub; to use a local copy instead, set
+`SURFACTANTKIT_SRC=path\to\Surfactant-Toolkit` before running the installer. Options:
+`surfkit-studio --port 8771 --no-browser`.
+
+Manual install:
 
 ```bash
 pip install -e path/to/Surfactant-Toolkit[calc]   # until SurfactantKit is on PyPI
@@ -91,7 +105,7 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
    citations, DOCX/PDF report, keyword chat.
 2. **Local chat model** (done): Ollama routing with keyword fallback, evaluated.
 3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter,
-   HLB, HLD, wetting and surface energy, zeta potential, solubilization. Next: dynamic surface tension, foam.
+   HLB, HLD, wetting and surface energy, zeta potential, solubilization, dynamic surface tension, foam (done).
 4. **Optional literature search** (done, off by default): only your search words leave the computer, never your data.
 
 ## Development

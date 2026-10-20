@@ -12,6 +12,7 @@ from __future__ import annotations
 import datetime as dt
 import io
 import re
+import unicodedata
 
 from docx import Document
 from docx.enum.section import WD_SECTION
@@ -35,12 +36,30 @@ def ascii_only(s: str) -> str:
             "≤": "<=", "≥": ">=", "≈": "~", "±": "+/-", "−": "-", "°": " deg ",
             "→": "->", "α": "alpha", "β": "beta", "γ": "gamma", "Γ": "Gamma",
             "Δ": "Delta", "μ": "u", "Å": "A"}
+    repl.update({"‐": "-", "‑": "-", "‒": "-", " ": " ", " ": " "})
     s = "".join(repl.get(ch, ch) for ch in str(s))
     s = s.replace("**", "").replace("`", "")                # markdown carried in from toolkit evidence
+    # accented letters (author names from literature search): e-acute -> e, not "?"
+    s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
     return s.encode("ascii", "replace").decode("ascii")
 
 
-def build_content(runs: list[dict], meta: dict) -> dict:
+def _name(section: dict) -> str:
+    """'3.12 Wetting ...' -> 'Wetting ...' (section numbers can have two digits)."""
+    return section["title"].split(" ", 1)[1]
+
+
+def _lit_line(r: dict) -> str:
+    who = ", ".join(r.get("authors", [])) + (" et al." if r.get("more_authors") else "")
+    bits = [b for b in (who, r.get("title", ""), r.get("venue", ""), str(r.get("year") or "")) if b]
+    return ". ".join(bits) + (f". https://doi.org/{r['doi']}" if r.get("doi") else ".")
+
+
+LIT_NOTE = ("Found by keyword search ({sources}) during this session and kept by the analyst. These records were not "
+            "checked by SurfactantKit Studio and are not cited in the analysis above.")
+
+
+def build_content(runs: list[dict], meta: dict, literature: list[dict] | None = None) -> dict:
     """One neutral structure that both writers render."""
     sections, refs, followups = [], [], []
     repeated = {r["technique"] for r in runs if sum(x["technique"] == r["technique"] for x in runs) > 1}
@@ -63,7 +82,8 @@ def build_content(runs: list[dict], meta: dict) -> dict:
         for f in t.followups:
             if f not in followups:
                 followups.append(f)
-    return {"meta": meta, "sections": sections, "refs": citations.for_keys(refs), "followups": followups}
+    return {"meta": meta, "sections": sections, "refs": citations.for_keys(refs), "followups": followups,
+            "literature": list(literature or [])}
 
 
 def _tier_rows(content: dict) -> list[list[str]]:
@@ -156,7 +176,7 @@ def to_docx(content: dict) -> bytes:
     tcount = fcount = 0
     _heading(doc, "1. Summary")
     for s in content["sections"]:
-        _para(doc, f"{s['title'][4:]}: " + " ".join(s["conclusion"]))
+        _para(doc, f"{_name(s)}: " + " ".join(s["conclusion"]))
     _heading(doc, "2. Data and methods")
     _para(doc, "Each analysis below states the method used and the principle behind it. Values were computed "
                "with the SurfactantKit library; the function calls are listed in the appendix.")
@@ -167,7 +187,7 @@ def to_docx(content: dict) -> bytes:
         if s["data_note"]:
             _para(doc, s["data_note"])
         tcount += 1
-        _para(doc, f"Table {tcount}. Results: {s['title'][4:]}.", 10, indent=False, double=False)
+        _para(doc, f"Table {tcount}. Results: {_name(s)}.", 10, indent=False, double=False)
         _table(doc, [[v["label"], v["text"]] for v in s["values"]], ["Quantity", "Value"])
         for f in s["figures"]:
             fcount += 1
@@ -190,6 +210,11 @@ def to_docx(content: dict) -> bytes:
     _heading(doc, "5. Suggested next steps")
     for f in content["followups"]:
         _para(doc, f)
+    if content.get("literature"):
+        _heading(doc, "6. Further reading found by literature search")
+        _para(doc, LIT_NOTE.format(sources=", ".join(sorted({r["source"] for r in content["literature"]}))))
+        for r in content["literature"]:
+            _para(doc, _lit_line(r), indent=False)
     _heading(doc, "References")
     for i, r in enumerate(content["refs"], 1):
         doi = f" https://doi.org/{r['doi']}" if r["doi"] else ""
@@ -197,7 +222,7 @@ def to_docx(content: dict) -> bytes:
     _heading(doc, "Appendix: software and function calls")
     _para(doc, f"SurfactantKit Studio {__version__}; SurfactantKit {m['toolkit_version']}.", indent=False)
     for s in content["sections"]:
-        _para(doc, f"{s['title'][4:]}: " + "; ".join(s["calls"]), 10, indent=False, double=False)
+        _para(doc, f"{_name(s)}: " + "; ".join(s["calls"]), 10, indent=False, double=False)
 
     buf = io.BytesIO()
     doc.save(buf)
@@ -245,7 +270,7 @@ def to_pdf(content: dict) -> bytes:
     tcount = fcount = 0
     heading("1. Summary")
     for s in content["sections"]:
-        para(f"{s['title'][4:]}: " + " ".join(s["conclusion"]))
+        para(f"{_name(s)}: " + " ".join(s["conclusion"]))
     heading("2. Data and methods")
     para("Each analysis below states the method used and the principle behind it. Values were computed with the "
          "SurfactantKit library; the function calls are listed in the appendix.")
@@ -270,7 +295,7 @@ def to_pdf(content: dict) -> bytes:
         if s["data_note"]:
             para(s["data_note"])
         tcount += 1
-        para(f"Table {tcount}. Results: {s['title'][4:]}.", 10, indent=False, double=False)
+        para(f"Table {tcount}. Results: {_name(s)}.", 10, indent=False, double=False)
         table([[v["label"], v["text"]] for v in s["values"]], ["Quantity", "Value"], (3, 2))
         for f in s["figures"]:
             fcount += 1
@@ -292,6 +317,11 @@ def to_pdf(content: dict) -> bytes:
     heading("5. Suggested next steps")
     for f in content["followups"]:
         para(f)
+    if content.get("literature"):
+        heading("6. Further reading found by literature search")
+        para(LIT_NOTE.format(sources=", ".join(sorted({r["source"] for r in content["literature"]}))))
+        for r in content["literature"]:
+            para(_lit_line(r), indent=False)
     heading("References")
     for i, r in enumerate(content["refs"], 1):
         doi = f" https://doi.org/{r['doi']}" if r["doi"] else ""
@@ -299,7 +329,7 @@ def to_pdf(content: dict) -> bytes:
     heading("Appendix: software and function calls")
     para(f"SurfactantKit Studio {__version__}; SurfactantKit {m['toolkit_version']}.", indent=False)
     for s in content["sections"]:
-        para(f"{s['title'][4:]}: " + "; ".join(s["calls"]), 10, indent=False, double=False)
+        para(f"{_name(s)}: " + "; ".join(s["calls"]), 10, indent=False, double=False)
     return bytes(pdf.output())
 
 

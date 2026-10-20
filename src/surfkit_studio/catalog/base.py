@@ -22,6 +22,7 @@ class Column:
     label: str
     units: list[str]                 # first entry is the canonical unit used internally
     aliases: list[str] = field(default_factory=list)   # header words used for auto-detection
+    factors: dict[str, float] = field(default_factory=dict)   # unit -> factor to units[0]; overrides the shared table
 
 
 @dataclass

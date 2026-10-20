@@ -78,7 +78,7 @@ def extract(df: pd.DataFrame, spec: DatasetSpec, mapping: dict) -> tuple[dict[st
             vals = (series + 273.15).tolist()
             notes.append("Temperature converted from degrees C to K.")
         else:
-            f = TO_CANONICAL.get(unit, 1.0)
+            f = col.factors.get(unit, TO_CANONICAL.get(unit, 1.0))
             vals = (series * f).tolist()
             if f != 1.0:
                 notes.append(f"{col.label} converted from {unit} to {col.units[0]}.")

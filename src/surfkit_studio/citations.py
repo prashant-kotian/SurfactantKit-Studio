@@ -130,6 +130,41 @@ REFERENCES: dict[str, dict] = {
         "doi": "10.1016/j.jciso.2021.100033",
         "verified": True, "checked": "2026-10-20, ScienceDirect record",
     },
+    "hua_rosen_1988": {
+        "text": "Hua, X. Y.; Rosen, M. J. Dynamic Surface Tension of Aqueous Surfactant Solutions. I. Basic "
+                "Parameters. J. Colloid Interface Sci. 1988, 124, 652-659.",
+        "doi": "",
+        "verified": True, "checked": "2026-10-21, reference lists of PMC3948073 and Springer s11743-004-0286-x (DOI not confirmed, omitted)",
+    },
+    "ward_tordai_1946": {
+        "text": "Ward, A. F. H.; Tordai, L. Time-Dependence of Boundary Tensions of Solutions I. The Role of "
+                "Diffusion in Time-Effects. J. Chem. Phys. 1946, 14, 453-461.",
+        "doi": "",
+        "verified": True, "checked": "2026-10-21, NASA ADS record 1946JChPh..14..453W and citing reference list (DOI not confirmed, omitted)",
+    },
+    "ritacco_2011": {
+        "text": "Ritacco, H.; Langevin, D.; Diamant, H.; Andelman, D. Dynamic Surface Tension of Aqueous Solutions of "
+                "Ionic Surfactants: Role of Electrostatics. Langmuir 2011, 27, 1009-1014.",
+        "doi": "10.1021/la103039v",
+        "verified": True, "checked": "2026-10-21, arXiv 1008.1230 record (journal reference and DOI)",
+    },
+    "ross_miles_1941": {
+        "text": "Ross, J.; Miles, G. D. An Apparatus for Comparison of Foaming Properties of Soaps and Detergents. "
+                "Oil Soap 1941, 18, 99-102.",
+        "doi": "10.1007/BF02545418",
+        "verified": True, "checked": "2026-10-21, Springer and Wiley (AOCS) records",
+    },
+    "bikerman_1938": {
+        "text": "Bikerman, J. J. The Unit of Foaminess. Trans. Faraday Soc. 1938, 34, 634-638.",
+        "doi": "10.1039/TF9383400634",
+        "verified": True, "checked": "2026-10-21, RSC Publishing record",
+    },
+    "georgieva_2009": {
+        "text": "Georgieva, D.; Cagna, A.; Langevin, D. Link between Surface Elasticity and Foam Stability. "
+                "Soft Matter 2009, 5, 2063-2071.",
+        "doi": "10.1039/b822568k",
+        "verified": True, "checked": "2026-10-21, RSC Publishing record",
+    },
     "surfactantkit": {
         "text": "Kotian, P. D. SurfactantKit: surfactant and interfacial-science theory as a tested Python "
                 "library. Software, 2026.",

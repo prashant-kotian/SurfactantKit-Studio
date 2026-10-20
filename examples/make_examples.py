@@ -92,6 +92,17 @@ def main():
     rows = [(e, round(math.exp(0.16 * e - 0.5) * (1 + rnd.gauss(0, 0.01)), 3)) for e in [6, 8, 10, 12, 14]]
     write("synthetic_salinity_scan.csv", ["EACN", "Optimal salinity S* (g/100 mL)"], rows)
 
+    # dynamic surface tension (Rosen-Hua form): gamma0 = 72.0, gamma_m = 40.0 mN/m, t* = 0.05 s, n = 0.8,
+    # noise 0.15 mN/m
+    ages = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]
+    rows = [(a, round(40.0 + 32.0 / (1 + (a / 0.05) ** 0.8) + rnd.gauss(0, 0.15), 3)) for a in ages]
+    write("synthetic_dynamic_tension.csv", ["Surface age (s)", "Surface tension (mN/m)"], rows)
+
+    # foam decay (Ross-Miles style, includes t = 0): h0 = 180 mm, first order, half-life 4 min, 1% noise
+    k = math.log(2) / 4.0
+    rows = [(t, round(180.0 * math.exp(-k * t) * (1 + rnd.gauss(0, 0.01)), 1)) for t in [0, 1, 2, 3, 5, 7, 10, 15]]
+    write("synthetic_foam_decay.csv", ["Time (min)", "Foam height (mm)"], rows)
+
 
 if __name__ == "__main__":
     main()

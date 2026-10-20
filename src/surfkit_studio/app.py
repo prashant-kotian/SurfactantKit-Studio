@@ -177,7 +177,38 @@ def _literature_reply(s: dict, q: str) -> dict:
         res = literature.search(q)
     except (literature.QueryRefused, ConnectionError) as e:
         return {"reply": str(e), "action": None, "engine": "literature"}
-    return {"reply": literature.as_text(res), "action": None, "engine": "literature", "literature": res}
+    s.setdefault("searches", []).append({**res, "keep": False})
+    return {"reply": literature.as_text(res), "action": None, "engine": "literature", "literature": res,
+            "search_id": len(s["searches"]) - 1}
+
+
+class KeepRequest(BaseModel):
+    sid: str
+    search_id: int
+    keep: bool = True
+
+
+@app.post("/api/literature/keep")
+def keep_literature(req: KeepRequest):
+    s = _session(req.sid)
+    searches = s.get("searches", [])
+    if not 0 <= req.search_id < len(searches):
+        raise HTTPException(404, "Unknown search.")
+    searches[req.search_id]["keep"] = req.keep
+    return {"kept": sum(len(x["results"]) for x in searches if x["keep"])}
+
+
+def _kept_literature(s: dict) -> list[dict]:
+    out, seen = [], set()
+    for srch in s.get("searches", []):
+        if not srch.get("keep"):
+            continue
+        for r in srch["results"]:
+            key = r.get("doi") or r.get("title")
+            if key not in seen:
+                seen.add(key)
+                out.append({**r, "source": srch["source"], "query": srch["query_sent"]})
+    return out
 
 
 class SearchRequest(BaseModel):
@@ -223,7 +254,7 @@ def get_report(sid: str, fmt: str, sample: str = "", author: str = "", affiliati
     s = _session(sid)
     if not s["runs"]:
         raise HTTPException(400, "Run at least one analysis first.")
-    content = report.build_content(s["runs"], report.default_meta(sample, author, affiliation))
+    content = report.build_content(s["runs"], report.default_meta(sample, author, affiliation), _kept_literature(s))
     if fmt == "docx":
         return Response(report.to_docx(content), media_type="application/vnd.openxmlformats-officedocument."
                         "wordprocessingml.document",
@@ -235,7 +266,13 @@ def get_report(sid: str, fmt: str, sample: str = "", author: str = "", affiliati
 
 
 def main():
+    import argparse
     import uvicorn
     import webbrowser
-    webbrowser.open("http://127.0.0.1:8770")
-    uvicorn.run(app, host="127.0.0.1", port=8770)
+    ap = argparse.ArgumentParser(prog="surfkit-studio", description="SurfactantKit Studio (runs on this computer only).")
+    ap.add_argument("--port", type=int, default=8770, help="local port (default 8770)")
+    ap.add_argument("--no-browser", action="store_true", help="do not open a browser window")
+    args = ap.parse_args()
+    if not args.no_browser:
+        webbrowser.open(f"http://127.0.0.1:{args.port}")
+    uvicorn.run(app, host="127.0.0.1", port=args.port)

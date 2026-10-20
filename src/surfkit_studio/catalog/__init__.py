@@ -7,13 +7,15 @@ from __future__ import annotations
 
 from surfactantkit.validation_tiers import get_tool_tier, VALIDATION_TIERS
 
-from . import aggregation, electrokinetics, hlb, hld, mixtures, solubilization, tensiometry, thermo, wetting
+from . import (aggregation, dynamic_tension, electrokinetics, foam, hlb, hld, mixtures, solubilization, tensiometry,
+               thermo, wetting)
 from .base import Technique
 
-TECHNIQUES: dict[str, Technique] = {t.id: t for t in [*tensiometry.TECHNIQUES, *thermo.TECHNIQUES,
-                                                      *mixtures.TECHNIQUES, *aggregation.TECHNIQUES,
-                                                      *hlb.TECHNIQUES, *hld.TECHNIQUES, *wetting.TECHNIQUES,
-                                                      *electrokinetics.TECHNIQUES, *solubilization.TECHNIQUES]}
+TECHNIQUES: dict[str, Technique] = {t.id: t for t in [*tensiometry.TECHNIQUES, *dynamic_tension.TECHNIQUES,
+                                                      *thermo.TECHNIQUES, *mixtures.TECHNIQUES,
+                                                      *aggregation.TECHNIQUES, *hlb.TECHNIQUES, *hld.TECHNIQUES,
+                                                      *wetting.TECHNIQUES, *electrokinetics.TECHNIQUES,
+                                                      *solubilization.TECHNIQUES, *foam.TECHNIQUES]}
 
 TIER_MEANING = {
     "T1": "Reproduces published numbers from primary literature.",

@@ -310,7 +310,8 @@ def run_isotherm(inp: RunInput) -> RunResult:
               Value("Frumkin K", r.frumkin_K, "1/mM"), Value("Frumkin a", r.frumkin_a, sig=3),
               Value("Frumkin R^2", r.frumkin_r_squared),
               Value("Delta BIC (Langmuir - Frumkin)", r.delta_bic, sig=3)]
-    if r.selected_model.lower().startswith("frumkin"):
+    frumkin = r.selected_model.lower().startswith("frumkin")
+    if frumkin:
         sign = "attractive" if (r.frumkin_a or 0) > 0 else "repulsive"
         concl = [f"The data justify the Frumkin model: adsorbed molecules show {sign} lateral interaction "
                  f"(a = {r.frumkin_a:.3g}), beyond what ideal Langmuir adsorption explains."]
@@ -323,7 +324,10 @@ def run_isotherm(inp: RunInput) -> RunResult:
     ax.set_xscale("log"); ax.set_xlabel("Concentration (mM)"); ax.set_ylabel("Surface tension (mN/m)")
     ax.legend(fontsize=7, loc="best")
     return RunResult(values, [Figure("isotherm", P.to_png(fig), "Pre-CMC data used for the isotherm comparison.")],
-                     concl, list(r.warnings), {"isotherm_model": r.selected_model},
+                     concl, list(r.warnings),
+                     {"isotherm_model": r.selected_model,
+                      "isotherm_K_per_mM": r.frumkin_K if frumkin else r.langmuir_K,
+                      "isotherm_a": (r.frumkin_a or 0.0) if frumkin else 0.0},
                      ["adsorption.select_isotherm_model"])
 
 
@@ -336,6 +340,7 @@ ISOTHERM = Technique(
                     "Both isotherms are fitted with the same gamma0 and Gamma_max; Frumkin's extra parameter "
                     "is kept only if it lowers BIC.", "Whenever there are 4 or more pre-CMC points.")],
     requires=["tensiometry_pre_c", "gamma0_mN_m", "gamma_max_mol_m2"], run=run_isotherm,
+    produces=["isotherm_model", "isotherm_K_per_mM", "isotherm_a"], unlocks=["foam_elasticity"],
     tools=["select_isotherm_model", "frumkin_fit_K_and_a", "szyszkowski_fit_K"],
     citations=["frumkin_1925", "szyszkowski_1908"],
     followups=["Report the selected isotherm with its K (and a) in your adsorption discussion."],

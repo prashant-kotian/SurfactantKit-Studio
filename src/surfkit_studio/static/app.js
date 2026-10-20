@@ -24,6 +24,24 @@ function say(text, who = "bot", engine = "") {
   }
   $("#log").appendChild(d);
   d.scrollIntoView({ block: "end" });
+  return d;
+}
+
+// Literature hits go into the report only when the researcher keeps them, and are listed there as
+// unchecked further reading, never as references.
+function addKeepButton(msgDiv, searchId) {
+  const b = document.createElement("button");
+  b.className = "secondary keep";
+  b.textContent = "Keep these papers for the report";
+  let kept = false;
+  b.onclick = async () => {
+    kept = !kept;
+    const r = await post("/api/literature/keep", { sid: SID, search_id: searchId, keep: kept });
+    b.textContent = kept ? `Kept (${r.kept} papers in the report's further reading); click to remove`
+      : "Keep these papers for the report";
+  };
+  msgDiv.appendChild(document.createElement("br"));
+  msgDiv.appendChild(b);
 }
 
 async function loadCatalog() {
@@ -48,7 +66,11 @@ function renderTree() {
       .sort((a, b) => (a.level === "primary" ? 0 : 1) - (b.level === "primary" ? 0 : 1));
     return `<details open><summary>${esc(c.category)}</summary><ul>${ts.map(item).join("")}</ul></details>`;
   }).join("");
-  $("#tree").querySelectorAll("a[data-id]").forEach((a) => (a.onclick = () => openTechnique(a.dataset.id)));
+  // the whole row opens the technique, not only the title text
+  $("#tree").querySelectorAll("li").forEach((li) => {
+    const a = li.querySelector("a[data-id]");
+    if (a) { li.style.cursor = "pointer"; li.onclick = () => openTechnique(a.dataset.id); }
+  });
 }
 
 function openTechnique(id) {
@@ -142,7 +164,8 @@ $("#chat-form").onsubmit = async (e) => {
   try {
     const r = await post("/api/chat", { sid: SID, message: msg });
     if (r.action?.open) openTechnique(r.action.open);
-    say(r.reply, "bot", r.engine);
+    const d = say(r.reply, "bot", r.engine);
+    if (r.search_id !== undefined && r.literature?.results?.length) addKeepButton(d, r.search_id);
   } catch (err) { say(`Error: ${err.message}`); }
 };
 
