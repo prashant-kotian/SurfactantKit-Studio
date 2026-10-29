@@ -192,6 +192,33 @@ async function showWebStatus(on) {
 }
 $("#web-toggle").onchange = (e) => showWebStatus(e.target.checked);
 
+// Workbook mode: upload the filled template, download the ZIP of results, report the summary in the chat.
+$("#wb-file").onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  say(`Analysing ${f.name} (all on this computer)...`);
+  const fd = new FormData();
+  fd.append("file", f);
+  try {
+    const r = await fetch("/api/workbook/analyze", { method: "POST", body: fd });
+    if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.detail || r.statusText); }
+    const blob = await r.blob();
+    const name = (r.headers.get("content-disposition") || "").match(/filename="([^"]+)"/)?.[1] || "results.zip";
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name });
+    a.click(); URL.revokeObjectURL(a.href);
+    const s = JSON.parse(r.headers.get("x-summary") || "{}");
+    const n = (v) => (typeof v === "number" ? v.toPrecision(3) : "not computed");
+    let msg = `Done: ${name} downloaded (${s.n_plots} plots as PNG and .agr). beta^M (mean) ${n(s.beta_m_mean)}, ` +
+      `beta^M (global) ${n(s.beta_m_global)}, beta^sigma ${n(s.beta_sigma_mean)} from ${s.n_mixtures} mixture(s).`;
+    if (s.n_flags) msg += ` ${s.n_flags} warning(s), see the Flags sheet: ` + s.flags.slice(0, 3).join(" | ");
+    say(msg);
+  } catch (err) {
+    say(`Could not analyse the workbook: ${err.message}`);
+  } finally {
+    e.target.value = "";
+  }
+};
+
 (async () => {
   SID = (await post("/api/session", {})).sid;
   await showAiStatus(true);

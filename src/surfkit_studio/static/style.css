@@ -63,3 +63,8 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; }
   .layout { grid-template-columns: 1fr; height: auto; }
   .chat { height: 60vh; border-right: 0; border-bottom: 1px solid var(--line); }
 }
+
+/* workbook mode: one Excel file in, completed workbook + plots out */
+.workbook { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.btn { display: inline-block; font: inherit; font-size: 13px; border-radius: 6px; padding: 5px 12px; cursor: pointer; text-decoration: none; }
+.btn.secondary { background: var(--chip); color: var(--ink); border: 1px solid var(--line); }

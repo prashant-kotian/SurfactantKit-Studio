@@ -42,6 +42,27 @@ exist in your session (the right-hand panel shows which are ready).
 For an ionic surfactant the free energy uses `Delta G_mic = (1 + beta) RT ln X_cmc`, with beta the degree of
 counterion binding (Zana, Langmuir 1996, 12, 1208).
 
+## Workbook mode: a whole binary-mixture study in one Excel file
+
+**Download template** (right-hand panel) gives one workbook: an Info sheet (names, ionic or nonionic, temperature,
+added salt, solvent surface tension), a sheet per pure surfactant and per mixture composition (surface tension in
+up to three runs per concentration, with mean and SD columns; conductivity optional), and an optional temperature
+series. **Upload filled workbook** returns a ZIP with:
+
+- the completed workbook: your data, then **Results** (CMC, gamma_CMC, pC20, Gamma_max, A_min, counterion binding,
+  free energies of micellization and adsorption; per composition the Clint ideal CMC, Rubingh X1, beta^M, f1, f2,
+  excess free energy; Rosen beta^sigma; Rosen's three synergism tests; temperature thermodynamics);
+- **Excel Solver sheets** laid out the way researchers already work (live formulas, Solver model preset, so
+  Data > Solver > Solve runs it): Rubingh per composition, Rubingh with one beta for all compositions (the Ogino and
+  Abe layout, with beta chosen by the 1/CMC residual), and Rosen per composition;
+- a **Comparison** sheet, live, of the Excel Solver values against the toolkit's;
+- a **Flags** sheet (step-shaped or too-short isotherms, a CMC with no decline before it, a non-flat plateau,
+  large run-to-run SD, unit or calibration problems); a flagged isotherm is kept out of beta^M and beta^sigma;
+- every plot as PNG and as an xmgrace (Grace) `.agr` project.
+
+Results are shown to the number of significant figures set on the Info sheet (2 by default); every cell keeps full
+precision.
+
 ## Honesty built in
 
 - **Validation tiers.** Every function used is shown with its SurfactantKit validation tier (T1: reproduces
@@ -107,6 +128,8 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
 3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter,
    HLB, HLD, wetting and surface energy, zeta potential, solubilization, dynamic surface tension, foam (done).
 4. **Optional literature search** (done, off by default): only your search words leave the computer, never your data.
+5. **Workbook mode** (done, v0.3): template in, completed workbook with Excel Solver sheets, comparison, flags and
+   PNG/.agr plots out. Next: salt-series analysis (Corrin-Harkins) once measured salt series are available.
 
 ## Development
 

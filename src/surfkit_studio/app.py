@@ -265,6 +265,29 @@ def get_report(sid: str, fmt: str, sample: str = "", author: str = "", affiliati
     raise HTTPException(404)
 
 
+@app.get("/api/workbook/template.xlsx")
+def workbook_template():
+    from .workbook import build_template
+    return Response(build_template(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": 'attachment; filename="surfactant_study_template.xlsx"'})
+
+
+@app.post("/api/workbook/analyze")
+async def workbook_analyze(file: UploadFile = File(...)):
+    import json
+    import re as _re
+
+    from .workbook import WorkbookError, build_output_zip
+    stem = _re.sub(r"[^A-Za-z0-9_-]+", "_", Path(file.filename or "study").stem).strip("_") or "study"
+    try:
+        z, summary = build_output_zip(await file.read(), stem)
+    except WorkbookError as e:
+        raise HTTPException(400, str(e))
+    return Response(z, media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="{stem}_results.zip"',
+                             "X-Summary": json.dumps(summary, default=str, ensure_ascii=True)})
+
+
 def main():
     import argparse
     import uvicorn
