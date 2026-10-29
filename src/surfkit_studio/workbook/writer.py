@@ -115,14 +115,22 @@ def _write_data(wb, study: Study, n: int):
 
 # --------------------------------------------------------------- results sheets
 PURE_ROWS = [
-    ("CMC (surface tension)", "cmc_t", "mM", "Break point of surface tension vs log10 C (two or three straight "
-     "segments, lowest total residual): curve_analysis.cmc_from_surface_tension_curve."),
-    ("Surface tension at CMC, gamma_CMC", "gamma_cmc", "mN/m", "From the fitted segments at the CMC."),
+    ("CMC (surface tension), method on Info", "cmc_t", "mM", "The CMC every result in this workbook uses; the method "
+     "chosen on Info (CMC method) is named at the top of this sheet."),
+    ("Surface tension at CMC, gamma_CMC", "gamma_cmc", "mN/m", "Plateau line at that CMC."),
+    ("CMC, regression intersection", "cmc_int", "mM", "Pre-CMC regression line x plateau regression line, gamma vs "
+     "log10 C; segments chosen by BIC (curve_analysis.cmc_from_surface_tension_curve, method='intersection')."),
+    ("gamma_CMC, regression intersection", "gamma_cmc_int", "mN/m", "Where the two lines meet."),
+    ("CMC, Szyszkowski nonlinear curve", "cmc_sz", "mM", "gamma = gamma0 - a ln(1 + bC) fitted to every point below the "
+     "plateau, crossed with the plateau line (curve_analysis.cmc_via_szyszkowski_plateau_intersection)."),
+    ("gamma_CMC, Szyszkowski nonlinear curve", "gamma_cmc_sz", "mN/m", "Plateau line at the Szyszkowski CMC."),
+    ("Szyszkowski fit R^2", "sz_r2", "", "R^2 of the Szyszkowski fit below the plateau."),
     ("Surface pressure at CMC, pi_CMC", "pi_cmc", "mN/m", "pi_CMC = gamma_solvent - gamma_CMC (solvent value on Info)."),
     ("C20", "c20", "mM", "Concentration that lowers the surface tension by 20 mN/m."),
     ("pC20 (efficiency)", "pc20", "", "pC20 = -log10(C20 / M)."),
     ("CMC / C20", "cmc_c20", "", "Ratio of CMC to C20."),
-    ("Gibbs prefactor n", "n_gibbs", "", "n = 2 for an ionic surfactant without added salt, 1 otherwise."),
+    ("Gibbs prefactor n", "n_gibbs", "", "n = 2 for a 1:1 ionic surfactant without added salt, 3 for a divalent ionic surfactant "
+     "(two counterions) without added salt, 1 otherwise."),
     ("Gamma_max", "gamma_max_u", "umol/m^2", "Gamma_max = -(1/nRT) d gamma / d ln C from the pre-CMC slope "
      "(adsorption.gibbs_gamma_max). A straight line through a curved isotherm gives the average slope of the "
      "declining region, so Gamma_max is a lower estimate when the decline is curved."),
@@ -142,7 +150,9 @@ PURE_ROWS = [
 def _results_pure(wb, res: Results, n):
     ws = wb.create_sheet("Results - pure")
     ws["A1"] = "Pure surfactants (SurfactantKit)"; ws["A1"].font = TITLE
-    ws["A2"] = f"Temperature {res.temperature_K:.2f} K. Hover over a value for its method and formula."
+    ws["A2"] = (f"Temperature {res.temperature_K:.2f} K. CMC method: "
+                f"{L.CMC_METHOD_LABEL[res.info.get('cmc_method') or 'regression intersection']}. "
+                "Hover over a value for its method and formula.")
     _header(ws, 4, ["Quantity", res.pure[0]["name"], res.pure[1]["name"], "Unit"])
     for p in res.pure:
         if p.get("gamma_max"):
@@ -164,9 +174,13 @@ def _results_pure(wb, res: Results, n):
 MIX_COLS = [
     ("Sheet", "sheet", None, None),
     ("alpha1", "alpha1", None, "Mole fraction of surfactant 1 in the total surfactant (from the Mix sheet)."),
-    ("CMC, surface tension (mM)", "cmc_t", "n", "Break point of surface tension vs log10 C."),
+    ("CMC, surface tension (mM)", "cmc_t", "n", "CMC by the method on Info; used for beta^M and the Solver sheets."),
     ("CMC, conductivity (mM)", "cmc_k", "n", "Two-line intersection of conductivity vs C."),
     ("gamma_CMC (mN/m)", "gamma_cmc", "n", None),
+    ("CMC, regression intersection (mM)", "cmc_int", "n", "Pre-CMC regression line x plateau regression line."),
+    ("gamma_CMC, regression intersection (mN/m)", "gamma_cmc_int", "n", None),
+    ("CMC, Szyszkowski nonlinear curve (mM)", "cmc_sz", "n", "Szyszkowski fit below the plateau x plateau line."),
+    ("gamma_CMC, Szyszkowski (mN/m)", "gamma_cmc_sz", "n", None),
     ("pC20", "pc20", "n", None),
     ("CMC ideal, Clint (mM)", "cmc_ideal", "n", "1/CMC_ideal = alpha1/CMC1 + (1 - alpha1)/CMC2."),
     ("X1 (micelle)", "x1", "n", "Solved from X1^2 ln(alpha1 CMC/(X1 CMC1)) = (1-X1)^2 ln((1-alpha1) CMC/((1-X1) CMC2)) "
@@ -187,6 +201,8 @@ MIX_COLS = [
 def _results_mix(wb, res: Results, n):
     ws = wb.create_sheet("Results - mixtures")
     ws["A1"] = "Mixtures: mixed micelle (Rubingh) and mixed monolayer (Rosen)"; ws["A1"].font = TITLE
+    ws["A2"] = ("CMC method for beta^M, beta^sigma and the Solver sheets: "
+                f"{L.CMC_METHOD_LABEL[res.info.get('cmc_method') or 'regression intersection']}.")
     _header(ws, 3, [c[0] for c in MIX_COLS])
     for i, row in enumerate(res.mix_rows):
         for j, (_, key, fmt, method) in enumerate(MIX_COLS):
@@ -407,7 +423,10 @@ def _methods(wb, res: Results):
             [f"  {c}" for c in res.calls] + [
         "",
         "Surface tension: the mean of the filled runs at each concentration is analysed; SD is shown as error bars.",
-        "Rosen beta-sigma: concentrations where each fitted pre-CMC line reaches the reference surface tension.",
+        f"CMC method (Info): {L.CMC_METHOD_LABEL[res.info.get('cmc_method') or 'regression intersection']}. "
+        "Both the regression-intersection and the Szyszkowski CMC are listed on the Results sheets.",
+        "Rosen beta-sigma: concentrations where each fitted pre-CMC description (the regression line, or the "
+        "Szyszkowski curve when that is the CMC method) reaches the reference surface tension.",
         f"Results are displayed to {res.info['sig_figs']} significant figures (Info); cells hold full precision.",
     ]
     for i, t in enumerate(lines):

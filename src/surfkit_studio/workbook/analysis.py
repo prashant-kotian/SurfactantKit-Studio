@@ -7,6 +7,7 @@ temperature series. Nothing is rounded here; rounding is display-only, in the wr
 """
 from __future__ import annotations
 
+import dataclasses
 import math
 from dataclasses import dataclass, field
 
@@ -58,12 +59,17 @@ class Results:
 
 
 def _system_type(kind: str, salt_mM: float) -> str:
-    if kind == "ionic":
-        return "ionic_excess_electrolyte" if salt_mM > 0 else "ionic_no_added_salt"
+    if kind in ("ionic", "ionic divalent"):
+        if salt_mM > 0:
+            return "ionic_excess_electrolyte"
+        return "divalent_ionic_no_added_salt" if kind == "ionic divalent" else "ionic_no_added_salt"
     return "nonionic"
 
 
-def _tension(ds: Dataset, flags: list[Flag], gamma_solvent: float) -> object | None:
+def _tension(ds: Dataset, flags: list[Flag], gamma_solvent: float,
+             cmc_method: str = "regression intersection") -> object | None:
+    """Both CMC constructions are always computed (studio_int, studio_sz); the returned result carries
+    the CMC and gamma_CMC of the method chosen on Info, which every downstream result uses."""
     if not ds.tension:
         return None
     t = ds.tension
@@ -71,7 +77,22 @@ def _tension(ds: Dataset, flags: list[Flag], gamma_solvent: float) -> object | N
         flags.append(Flag(ds.sheet, f"Only {len(t.conc)} surface tension points; at least {MIN_TENSION_POINTS} "
                                     "are needed for a CMC. Not analysed."))
         return None
-    r = ca.cmc_from_surface_tension_curve(t.conc, t.mean)
+    r_int = ca.cmc_from_surface_tension_curve(t.conc, t.mean, method="intersection")
+    sz = ca.cmc_via_szyszkowski_plateau_intersection(t.conc, t.mean)
+    if cmc_method == "break point":
+        r = ca.cmc_from_surface_tension_curve(t.conc, t.mean)
+    elif cmc_method == "Szyszkowski nonlinear curve":
+        if sz.cmc_mM is None:
+            flags.append(Flag(ds.sheet, f"Szyszkowski nonlinear curve: {sz.reason}. Not analysed."))
+            return None
+        r = dataclasses.replace(r_int, cmc_mM=sz.cmc_mM, gamma_at_cmc_mN_per_m=sz.gamma_at_cmc_mN_per_m,
+                                method=sz.method)
+    else:
+        r = r_int
+    r.studio_int, r.studio_sz = r_int, sz
+    r.studio_use_sz = cmc_method == "Szyszkowski nonlinear curve"
+    if sz.cmc_mM is None:
+        flags.append(Flag(ds.sheet, f"Szyszkowski nonlinear curve: {sz.reason}.", "note"))
     if ca.plateau_is_statistically_suspect(r):
         flags.append(Flag(ds.sheet, "The plateau above the CMC has too few points or is not flat; the CMC is "
                                     "provisional. Measure more concentrations above the break."))
@@ -122,9 +143,18 @@ def _conductivity(ds: Dataset, kind: str | None, flags: list[Flag]) -> object | 
 
 
 def _c_at_gamma(t, gamma_ref: float) -> tuple[float | None, str | None]:
-    """Concentration where the fitted pre-CMC line reaches gamma_ref, and why not if it cannot."""
+    """Concentration where the fitted pre-CMC description (line, or the Szyszkowski curve when that is
+    the chosen CMC method) reaches gamma_ref, and why not if it cannot."""
     if t is None:
         return None, "no surface tension analysis"
+    if getattr(t, "studio_use_sz", False):
+        sz = t.studio_sz
+        if gamma_ref < sz.gamma_at_cmc_mN_per_m:
+            return None, (f"cannot be read: this curve never reaches it (surface tension at the CMC is "
+                          f"{sz.gamma_at_cmc_mN_per_m:.1f} mN/m)")
+        if gamma_ref >= sz.gamma0_fitted_mN_m:
+            return None, "cannot be read: above the fitted Szyszkowski gamma0"
+        return (math.exp((sz.gamma0_fitted_mN_m - gamma_ref) / sz.a_fitted_mN_per_m) - 1.0) / sz.b_fitted_per_mM, None
     s = t.premicellar_slope_mN_per_m_per_log10C
     if s >= 0:
         return None, "cannot be read: the pre-CMC slope is not negative"
@@ -174,15 +204,25 @@ def analyse(study: Study) -> Results:
     gsolv = float(info["gamma_solvent"])
     gamma_ref = gsolv - float(info["pi_ref"])
     flags = [Flag("Reading", n, "note") for n in study.notes]
-    calls = ["curve_analysis.cmc_from_surface_tension_curve", "curve_analysis.plateau_is_statistically_suspect"]
+    cmc_method = info.get("cmc_method") or "regression intersection"
+    calls = ["curve_analysis.cmc_from_surface_tension_curve(method='intersection')",
+             "curve_analysis.cmc_via_szyszkowski_plateau_intersection",
+             "curve_analysis.plateau_is_statistically_suspect"]
+    if cmc_method == "break point":
+        calls.append("curve_analysis.cmc_from_surface_tension_curve(method='rss')")
     curves: dict[str, Curve] = {}
     kinds = (info["s1_type"], info["s2_type"])
+
+    def both_cmcs(t) -> dict:
+        si, sz = t.studio_int, t.studio_sz
+        return {"cmc_int": si.cmc_mM, "gamma_cmc_int": si.gamma_at_cmc_mN_per_m,
+                "cmc_sz": sz.cmc_mM, "gamma_cmc_sz": sz.gamma_at_cmc_mN_per_m, "sz_r2": sz.fit_r_squared}
 
     # ---------------------------------------------------------------- pure surfactants
     pure = []
     for idx, ds in enumerate(study.pure):
         kind = kinds[idx]
-        cv = Curve(ds.sheet, None, _tension(ds, flags, gsolv), _conductivity(ds, kind, flags))
+        cv = Curve(ds.sheet, None, _tension(ds, flags, gsolv, cmc_method), _conductivity(ds, kind, flags))
         curves[ds.sheet] = cv
         row = {"sheet": ds.sheet, "name": info[f"s{idx + 1}_name"], "type": kind}
         t, k = cv.t, cv.k
@@ -192,8 +232,8 @@ def analyse(study: Study) -> Results:
             pi_cmc = gsolv - t.gamma_at_cmc_mN_per_m
             row.update(cmc_t=t.cmc_mM, gamma_cmc=t.gamma_at_cmc_mN_per_m, pi_cmc=pi_cmc, c20=t.c20_mM,
                        pc20=t.pC20, cmc_c20=(t.cmc_mM / t.c20_mM if t.c20_mM else None),
-                       n_gibbs=2 if st == "ionic_no_added_salt" else 1, gamma_max=gmax,
-                       a_min=ads.gibbs_a_min(gmax) if gmax > 0 else None)
+                       n_gibbs=int(ads.N_FACTOR_BY_SYSTEM_TYPE[st]), gamma_max=gmax,
+                       a_min=ads.gibbs_a_min(gmax) if gmax > 0 else None, **both_cmcs(t))
             if kind == "zwitterionic":
                 flags.append(Flag(ds.sheet, "Zwitterionic surfactant treated with Gibbs n = 1.", "note"))
             if st == "ionic_excess_electrolyte" and float(info["salt_mM"]) < 10 * t.cmc_mM:
@@ -205,7 +245,10 @@ def analyse(study: Study) -> Results:
             calls.append("curve_analysis.cmc_from_conductivity_curve")
         if t:
             factor = None
-            if kind == "ionic":
+            if kind == "ionic divalent":
+                flags.append(Flag(ds.sheet, "Free energy of micellization not computed: the (1 + beta) RT ln X_CMC "
+                                            "form is for a 1:1 ionic surfactant; a divalent one needs its own form.", "note"))
+            elif kind == "ionic":
                 if k:
                     factor = 1.0 + k.counterion_binding_degree
                 else:
@@ -228,12 +271,12 @@ def analyse(study: Study) -> Results:
     # ------------------------------------------------------------- mixtures, per sheet
     mix_rows = []
     for ds in study.mixes:
-        cv = Curve(ds.sheet, ds.alpha1, _tension(ds, flags, gsolv), _conductivity(ds, "ionic", flags))
+        cv = Curve(ds.sheet, ds.alpha1, _tension(ds, flags, gsolv, cmc_method), _conductivity(ds, "ionic", flags))
         curves[ds.sheet] = cv
         row = {"sheet": ds.sheet, "alpha1": ds.alpha1}
         if cv.t:
             row.update(cmc_t=cv.t.cmc_mM, gamma_cmc=cv.t.gamma_at_cmc_mN_per_m, pc20=cv.t.pC20, c20=cv.t.c20_mM,
-                       unreliable=cv.t.studio_unreliable)
+                       unreliable=cv.t.studio_unreliable, **both_cmcs(cv.t))
         if cv.k:
             row.update(cmc_k=cv.k.cmc_mM, beta_cb=cv.k.counterion_binding_degree)
         mix_rows.append(row)
@@ -359,6 +402,10 @@ def analyse(study: Study) -> Results:
             flags.append(Flag(L_TEMP, f"{name}: {len(pts_t)} temperature(s); 3 or more are needed."))
             continue
         kind = kinds[i]
+        if kind == "ionic divalent":
+            flags.append(Flag(L_TEMP, f"{name}: enthalpy not computed; the free-energy form used is for 1:1 ionic "
+                                      "surfactants, not divalent ones."))
+            continue
         factor = 1.0 if kind != "ionic" else (1.0 + pure[i]["beta_cb"] if pure[i].get("beta_cb") else None)
         if factor is None:
             flags.append(Flag(L_TEMP, f"{name}: enthalpy not computed; an ionic surfactant needs counterion binding "

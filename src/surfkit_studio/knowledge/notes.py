@@ -20,7 +20,8 @@ NOTES = [
     {"title": "Rosen beta^sigma for the mixed monolayer",
      "text": "beta^sigma uses the same equation as Rubingh's beta^M, but with the concentrations at which the pure "
              "surfactants (C1, C2) and the mixture (C12) reach one chosen surface tension, not the CMCs. The Studio "
-             "reads them where each fitted pre-CMC line reaches gamma_solvent - pi_ref (20 mN/m by default).",
+             "reads them where each fitted pre-CMC line (or the fitted Szyszkowski curve, when that is the CMC "
+             "method on Info) reaches gamma_solvent - pi_ref (20 mN/m by default).",
      "equations": ["X1^2 ln((alpha1 C12)/(X1 C1)) = (1-X1)^2 ln(((1-alpha1) C12)/((1-X1) C2))",
                    "beta^sigma = (ln [alpha1 C12/(X1 C1)])/((1-X1)^2)"],
      "refs": ["Rosen 2012"], "technique": "mixed_micelles"},
@@ -41,7 +42,9 @@ NOTES = [
      "equations": [], "refs": [], "technique": None},
     {"title": "Gibbs prefactor n for the surface excess",
      "text": "n = 1 for a nonionic surfactant and for an ionic surfactant in excess inert electrolyte; n = 2 for a "
-             "1:1 ionic surfactant without added salt. The Studio does not guess it: the condition must be stated.",
+             "1:1 ionic surfactant without added salt; n = 3 for a divalent ionic surfactant (a gemini, or a dianion "
+             "such as glutamate at pH 7) with two monovalent counterions, same condition. The Studio does not "
+             "guess it: the condition must be stated.",
      "equations": ["Gamma_max = -1/(nRT) (d gamma)/(d ln C)"], "refs": ["Rosen 2012"], "technique": "surface_excess"},
     {"title": "C20, pC20 and CMC/C20",
      "text": "C20 is the concentration that lowers the surface tension by 20 mN/m from the solvent value; pC20 is "
@@ -65,6 +68,15 @@ NOTES = [
              "is checked but no published worked number exists. T3: an estimate or correlation. The tier is shown "
              "with each result.",
      "equations": [], "refs": [], "technique": None},
+    {"title": "CMC by regression intersection or by the Szyszkowski nonlinear curve",
+     "text": "Surface tension is plotted against log10 C. Regression intersection: a straight line is fitted to the "
+             "decline and another to the plateau, and the CMC is where they cross. Szyszkowski nonlinear curve: "
+             "gamma = gamma0 - a ln(1 + bC) is fitted to every point below the plateau (gamma0, a and b all free) and "
+             "the CMC is where that curve crosses the plateau line. In both, gamma_CMC is the plateau line at the "
+             "CMC. On a curved decline the straight line meets the plateau late, so regression intersection reads "
+             "higher; the Workbook lists both and uses the one chosen on Info (CMC method).",
+     "equations": ["gamma = gamma0 - a ln(1 + bC)", "CMC: gamma_fit(CMC) = p0 + p1 log10(CMC)"],
+     "refs": ["Rosen 2012"], "technique": "cmc_tensiometry"},
     {"title": "Gamma_max from a curved isotherm",
      "text": "The Gibbs slope is taken from a straight line through the pre-CMC decline. When the decline is "
              "curved (Szyszkowski behaviour), that line gives the average slope, so Gamma_max is a lower estimate "

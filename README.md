@@ -13,7 +13,7 @@ a tested Python library.
 
 | Category | Technique | Input | Methods |
 |---|---|---|---|
-| Micellization | CMC from surface tension | surface tension vs concentration | break-point fit, tangent intersection, steepest slope, sigmoid with 95% CI, Szyszkowski deviation, compare all |
+| Micellization | CMC from surface tension | surface tension vs concentration | break-point fit, regression intersection, Szyszkowski nonlinear curve, tangent intersection, steepest slope, sigmoid with 95% CI, Szyszkowski deviation, compare all |
 | Micellization | CMC and counterion binding | conductivity vs concentration | two-line break point |
 | Adsorption | Surface excess and area per molecule | from the CMC analysis | Gibbs equation |
 | Adsorption | Langmuir vs Frumkin adsorption | from the CMC analysis | BIC model selection |
@@ -44,8 +44,8 @@ counterion binding (Zana, Langmuir 1996, 12, 1208).
 
 ## Workbook mode: a whole binary-mixture study in one Excel file
 
-**Download template** (right-hand panel) gives one workbook: an Info sheet (names, ionic or nonionic, temperature,
-added salt, solvent surface tension), a sheet per pure surfactant and per mixture composition (surface tension in
+**Download template** (right-hand panel) gives one workbook: an Info sheet (names, ionic, ionic divalent or nonionic,
+temperature, added salt, solvent surface tension, CMC method), a sheet per pure surfactant and per mixture composition (surface tension in
 up to three runs per concentration, with mean and SD columns; conductivity optional), and an optional temperature
 series. **Upload filled workbook** returns a ZIP with:
 
@@ -62,6 +62,11 @@ series. **Upload filled workbook** returns a ZIP with:
 
 Results are shown to the number of significant figures set on the Info sheet (2 by default); every cell keeps full
 precision.
+
+The **CMC method** on Info sets the CMC behind every result, beta and Solver sheet: regression intersection (default;
+decline line x plateau line), Szyszkowski nonlinear curve (gamma0 - a ln(1 + bC) fitted below the plateau, x plateau
+line) or the older break point. Both the regression-intersection and the Szyszkowski CMC and gamma_CMC are always
+listed. **ionic divalent** (a gemini, or a dianion with two counterions) uses Gibbs n = 3 without added salt.
 
 ## Honesty built in
 

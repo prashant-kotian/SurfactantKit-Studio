@@ -81,8 +81,17 @@ def test_reader_rejects_a_file_that_is_not_the_template():
 
 
 # ------------------------------------------------------------------ analysis
+def _with_cmc_method(raw: bytes, method: str) -> bytes:
+    wb = openpyxl.load_workbook(io.BytesIO(raw))
+    wb[L.INFO].cell(L.INFO_FIELDS["cmc_method"][0], L.INFO_VALUE_COL, method)
+    buf = io.BytesIO(); wb.save(buf)
+    return buf.getvalue()
+
+
 def test_synthetic_study_recovers_the_parameters_it_was_built_from():
-    res = analyse(read_workbook(S.build()))
+    # The original v0.3 assertions, on the break-point CMC they were written for (the default before
+    # 2026-10-30). Its exact beta^M comes partly from both pure CMCs being 5% low by the same amount.
+    res = analyse(read_workbook(_with_cmc_method(S.build(), "break point")))
     t = S.truth()
     assert res.rubingh["beta_mean"] == pytest.approx(t["beta_m"], abs=0.01)
     assert res.rubingh["beta_global"] == pytest.approx(t["beta_m"], abs=0.01)
@@ -94,6 +103,43 @@ def test_synthetic_study_recovers_the_parameters_it_was_built_from():
     assert p1["cmc_t"] == pytest.approx(t["cmc1"], rel=0.08) and p2["cmc_t"] == pytest.approx(t["cmc2"], rel=0.08)
     assert [s["result"] for s in res.synergism] == [True, True, True]
     assert not [f for f in res.flags if f.level == "warning"]
+
+
+def test_szyszkowski_cmc_method_recovers_the_synthetic_truth_closely():
+    """The synthetic pure isotherms ARE Szyszkowski curves, so this method should recover their CMCs
+    almost exactly, and beta^sigma closer than the straight-line methods do."""
+    res = analyse(read_workbook(_with_cmc_method(S.build(), "Szyszkowski nonlinear curve")))
+    t = S.truth()
+    p1, p2 = res.pure
+    assert p1["cmc_t"] == pytest.approx(t["cmc1"], rel=0.005) and p2["cmc_t"] == pytest.approx(t["cmc2"], rel=0.005)
+    assert res.rubingh["beta_mean"] == pytest.approx(t["beta_m"], abs=0.05)
+    assert res.rosen["beta_mean"] == pytest.approx(t["beta_sigma"], rel=0.005)
+    assert p1["cmc_sz"] == p1["cmc_t"] and p1["cmc_int"] != p1["cmc_t"]
+    assert not [f for f in res.flags if f.level == "warning"]
+
+
+def test_regression_intersection_default_and_its_known_bias_on_a_curved_isotherm():
+    """Default CMC method. A straight line through a curved (Szyszkowski) decline meets the plateau
+    late, so the pure CMCs read 7-9% high here; beta^M stays within 0.15 of the truth."""
+    res = analyse(read_workbook(S.build()))
+    t = S.truth()
+    p1, p2 = res.pure
+    assert p1["cmc_t"] == p1["cmc_int"]
+    assert 1.0 < p1["cmc_t"] / t["cmc1"] < 1.10 and 1.0 < p2["cmc_t"] / t["cmc2"] < 1.10
+    assert res.rubingh["beta_mean"] == pytest.approx(t["beta_m"], abs=0.15)
+    assert [s["result"] for s in res.synergism] == [True, True, True]
+
+
+def test_ionic_divalent_uses_gibbs_prefactor_three():
+    raw = S.build()
+    wb = openpyxl.load_workbook(io.BytesIO(raw))
+    wb[L.INFO].cell(L.INFO_FIELDS["s1_type"][0], L.INFO_VALUE_COL, "ionic divalent")
+    buf = io.BytesIO(); wb.save(buf)
+    gem = analyse(read_workbook(buf.getvalue())).pure[0]
+    one = analyse(read_workbook(raw)).pure[0]
+    assert gem["n_gibbs"] == 3 and one["n_gibbs"] == 2
+    assert gem["gamma_max"] == pytest.approx(one["gamma_max"] * 2 / 3, rel=1e-12)
+    assert "dg_mic" not in gem
 
 
 def test_global_beta_reproduces_the_ogino_abe_sds_poe_example():
@@ -128,6 +174,9 @@ def test_workbook_cmc_equals_the_studio_tensiometry_technique_on_real_sds_data()
     rows = list(csv.reader(open(EX / "SDS_surface_tension.csv", encoding="utf-8")))[1:]
     c, g = [float(r[0]) for r in rows], [float(r[1]) for r in rows]
     res = analyse(read_workbook(_book({"Surfactant 1": (c, g)})))
+    # default CMC method since 2026-10-30: regression intersection (was the break point)
+    assert res.pure[0]["cmc_t"] == ca.cmc_from_surface_tension_curve(c, g, method="intersection").cmc_mM
+    res = analyse(read_workbook(_with_cmc_method(_book({"Surfactant 1": (c, g)}), "break point")))
     assert res.pure[0]["cmc_t"] == ca.cmc_from_surface_tension_curve(c, g).cmc_mM
 
 
@@ -205,6 +254,8 @@ def test_endpoints_serve_the_template_and_return_the_results_zip():
     assert r.status_code == 200 and r.headers["content-type"] == "application/zip"
     assert 'filename="my_study_results.zip"' in r.headers["content-disposition"]
     s = json.loads(r.headers["x-summary"])
-    assert round(s["beta_m_mean"], 2) == -6.0 and s["n_plots"] == 12
+    # default CMC method (regression intersection) on the synthetic Szyszkowski isotherms: -6.10 against a
+    # true -6.0; see test_regression_intersection_default_and_its_known_bias_on_a_curved_isotherm
+    assert s["beta_m_mean"] == pytest.approx(-6.0, abs=0.15) and s["n_plots"] == 12
     bad = client.post("/api/workbook/analyze", files={"file": ("x.xlsx", b"nope", "application/octet-stream")})
     assert bad.status_code == 400 and "readable" in bad.json()["detail"]

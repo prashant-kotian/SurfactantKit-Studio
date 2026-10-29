@@ -19,6 +19,7 @@ SYSTEM_TYPES = [
     ("nonionic", "Nonionic surfactant (n = 1)"),
     ("ionic_excess_electrolyte", "Ionic, in excess inert electrolyte (n = 1)"),
     ("ionic_no_added_salt", "Ionic 1:1, no added salt (n = 2)"),
+    ("divalent_ionic_no_added_salt", "Divalent ionic (gemini, or dianion) with 2 counterions, no added salt (n = 3)"),
 ]
 
 TENSIOMETRY = DatasetSpec(
@@ -45,9 +46,17 @@ CMC_METHODS = [
            "low-concentration baseline when the data show one) and places the break where the "
            "total residual is smallest.",
            "Default. Best for a curve with a clear decline and a flat plateau."),
+    Method("intersection", "Regression intersection",
+           "Same segments as the break-point fit; the CMC is where the pre-CMC regression line meets the "
+           "plateau regression line, so it is not tied to the measured concentrations.",
+           "The usual published construction; use it when the CMC falls between two measured points."),
+    Method("szyszkowski_curve", "Szyszkowski nonlinear curve",
+           "Fits gamma = gamma0 - a ln(1 + bC) (all three free) to every point below the plateau; the CMC "
+           "is where this curve meets the plateau regression line.",
+           "When the decline is curved rather than straight, which is common well below the CMC."),
     Method("tangential", "Tangent intersection (Rosen)",
-           "Intersection of the steepest pre-CMC line with the post-CMC line, the classical "
-           "graphical construction.",
+           "Intersection of the tangent at the steepest part of the decline (steepest run of consecutive "
+           "points) with the post-CMC line, the classical graphical construction.",
            "When you want the textbook graphical value to compare with published CMCs."),
     Method("derivative", "Steepest-slope point",
            "Midpoint of the adjacent pair with the largest |d gamma / d log10 C|.",
@@ -100,10 +109,14 @@ def run_cmc_compare(inp: RunInput) -> RunResult:
     """Every estimator on the same curve, side by side: the spread is itself a result."""
     c, g = inp.data["conc"], inp.data["gamma"]
     rows, calls = [], []
-    for m in ("rss", "tangential", "derivative"):
+    for m in ("rss", "intersection", "tangential", "derivative"):
         r = ca.cmc_from_surface_tension_curve(c, g, method=m)
         rows.append((next(x.label for x in CMC_METHODS if x.key == m), r.cmc_mM))
         calls.append(f"curve_analysis.cmc_from_surface_tension_curve(method='{m}')")
+    sz = ca.cmc_via_szyszkowski_plateau_intersection(c, g)
+    calls.append("curve_analysis.cmc_via_szyszkowski_plateau_intersection")
+    if sz.cmc_mM:
+        rows.append(("Szyszkowski nonlinear curve", sz.cmc_mM))
     base = ca.cmc_from_surface_tension_curve(c, g)
     b = ca.bootstrap_cmc(_log10(c), g, n_boot=1000, ci=0.95, seed=0)
     rows.append(("Sigmoid midpoint", b.cmc_point))
@@ -120,9 +133,10 @@ def run_cmc_compare(inp: RunInput) -> RunResult:
     values.append(Value("Spread (max / min)", hi / lo, sig=3))
     fig, ax = P.new(16.0, 8.0)
     ax.scatter(c, g, s=18, color=P.DATA, zorder=3, label="Measured")
-    colors = [P.FIT, P.ALT, P.MARK, P.MUTED, P.INK]
-    for (name, v), col in zip(rows, colors):
-        ax.axvline(v, color=col, lw=1.1, ls=":", label=f"{name}: {v:.3g} mM")
+    colors = [P.FIT, P.ALT, P.MARK, P.MUTED, P.INK, P.FIT, P.ALT]
+    styles = [":", ":", ":", ":", ":", "--", "-."]
+    for (name, v), col, ls in zip(rows, colors, styles):
+        ax.axvline(v, color=col, lw=1.1, ls=ls, label=f"{name}: {v:.3g} mM")
     ax.set_xscale("log"); ax.set_xlabel("Concentration (mM)"); ax.set_ylabel("Surface tension (mN/m)")
     ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0))   # outside: never covers the lines
     concl = [f"The estimators place the CMC between {lo:.3g} and {hi:.3g} mM on the same data.",
@@ -144,7 +158,7 @@ def run_cmc(inp: RunInput) -> RunResult:
     c, g = inp.data["conc"], inp.data["gamma"]
     calls, warnings, extra = [], [], {}
     method = inp.method or "rss"
-    base_method = method if method in ("rss", "tangential", "derivative") else "rss"
+    base_method = method if method in ("rss", "intersection", "tangential", "derivative") else "rss"
     r = ca.cmc_from_surface_tension_curve(c, g, method=base_method)
     calls.append(f"curve_analysis.cmc_from_surface_tension_curve(method='{base_method}')")
     suspect = ca.plateau_is_statistically_suspect(r)
@@ -168,6 +182,22 @@ def run_cmc(inp: RunInput) -> RunResult:
             warnings.append(b.caveat)
         extra = {"cmc_ci_low_mM": b.cmc_ci_low, "cmc_ci_high_mM": b.cmc_ci_high}
         figure_extra = (b.cmc_point, "Sigmoid midpoint")
+    elif method == "szyszkowski_curve":
+        st = inp.params.get("system_type") or None
+        s = ca.cmc_via_szyszkowski_plateau_intersection(c, g, system_type=st,
+                                                        temperature_K=float(inp.params["temperature_K"]))
+        calls.append("curve_analysis.cmc_via_szyszkowski_plateau_intersection")
+        if s.cmc_mM is None:
+            warnings.append(f"Szyszkowski nonlinear curve: {s.reason}.")
+        else:
+            cmc = s.cmc_mM
+            values += [Value("CMC (Szyszkowski nonlinear curve)", s.cmc_mM, "mM"),
+                       Value("Surface tension at CMC (Szyszkowski)", s.gamma_at_cmc_mN_per_m, "mN/m"),
+                       Value("Szyszkowski gamma0", s.gamma0_fitted_mN_m, "mN/m"),
+                       Value("Szyszkowski a", s.a_fitted_mN_per_m, "mN/m"),
+                       Value("Szyszkowski b", s.b_fitted_per_mM, "1/mM"),
+                       Value("Szyszkowski fit R^2", s.fit_r_squared, sig=4)]
+            figure_extra = (s.cmc_mM, "Szyszkowski curve")
     elif method == "szyszkowski":
         st = inp.params.get("system_type")
         if not st:
@@ -183,7 +213,7 @@ def run_cmc(inp: RunInput) -> RunResult:
             figure_extra = (d.cmc_mM, "Szyszkowski deviation")
 
     values += [
-        Value("CMC (break point)" if method != "rss" else "CMC", r.cmc_mM, "mM"),
+        Value("CMC" if method in ("rss", "intersection") else "CMC (break point)", r.cmc_mM, "mM"),
         Value("Surface tension at CMC", r.gamma_at_cmc_mN_per_m, "mN/m"),
         Value("Baseline surface tension (gamma0)", r.gamma0_mN_m, "mN/m"),
         Value("Pre-CMC slope", r.premicellar_slope_mN_per_m_per_log10C, "mN/m per decade"),
@@ -236,7 +266,8 @@ CMC_TENSIOMETRY = Technique(
             "from a surface tension vs concentration curve.",
     dataset=TENSIOMETRY, params=[TEMPERATURE, Param(**{**SYSTEM.__dict__, "required": False})],
     methods=CMC_METHODS, run=run_cmc,
-    tools=["cmc_from_surface_tension_curve", "bootstrap_cmc", "cmc_via_szyszkowski_deviation"],
+    tools=["cmc_from_surface_tension_curve", "bootstrap_cmc", "cmc_via_szyszkowski_deviation",
+           "cmc_via_szyszkowski_plateau_intersection"],
     citations=["rosen_kunjappu_2012", "szyszkowski_1908"],
     produces=["cmc_mM", "premicellar_slope_ln", "gamma0_mN_m", "tensiometry_pre_c", "tensiometry_pre_g"],
     unlocks=["surface_excess", "isotherm_selection", "gibbs_energy_micellization", "wetting_solution"],

@@ -11,9 +11,9 @@ TEMPERATURE = "Temperature series"
 # Info sheet: key -> (row, label, default, allowed values or None)
 INFO_FIELDS = {
     "s1_name": (3, "Surfactant 1 name", "Surfactant 1", None),
-    "s1_type": (4, "Surfactant 1 type", "ionic", ("ionic", "nonionic", "zwitterionic")),
+    "s1_type": (4, "Surfactant 1 type", "ionic", ("ionic", "ionic divalent", "nonionic", "zwitterionic")),
     "s2_name": (5, "Surfactant 2 name", "Surfactant 2", None),
-    "s2_type": (6, "Surfactant 2 type", "ionic", ("ionic", "nonionic", "zwitterionic")),
+    "s2_type": (6, "Surfactant 2 type", "ionic", ("ionic", "ionic divalent", "nonionic", "zwitterionic")),
     "temperature_C": (7, "Temperature (C)", 25.0, None),
     "salt_name": (8, "Added salt (name, or none)", "none", None),
     "salt_mM": (9, "Added salt concentration (mM, 0 if none)", 0.0, None),
@@ -21,6 +21,13 @@ INFO_FIELDS = {
     "pi_ref": (11, "Surface pressure for Rosen beta-sigma (mN/m)", 20.0, None),
     "kappa_unit": (12, "Conductivity unit", "uS/cm", ("uS/cm", "mS/cm")),
     "sig_figs": (13, "Significant figures shown in results", 2, None),
+    "cmc_method": (14, "CMC method (surface tension)", "regression intersection",
+                   ("regression intersection", "Szyszkowski nonlinear curve", "break point")),
+}
+CMC_METHOD_LABEL = {
+    "regression intersection": "regression intersection (decline line x plateau line)",
+    "Szyszkowski nonlinear curve": "Szyszkowski nonlinear curve x plateau line",
+    "break point": "break point (midpoint between the last decline and first plateau point)",
 }
 INFO_VALUE_COL = 2
 

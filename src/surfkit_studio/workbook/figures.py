@@ -35,11 +35,21 @@ def _tension_fig(name, title, tension, t, gamma_ref=None) -> FigSpec:
     f.series.append(Series("Mean of runs", tension.conc, tension.mean,
                            [s or 0.0 for s in tension.sd] if any(s for s in tension.sd) else None))
     if t is not None:
-        lc = math.log10(t.cmc_mM)
-        x0 = t.premicellar_x_min_mM
-        f.series.append(Series("Pre-CMC fit", [x0, t.cmc_mM],
-                               [t.gamma_at_cmc_mN_per_m + t.premicellar_slope_mN_per_m_per_log10C * (math.log10(x) - lc)
-                                for x in (x0, t.cmc_mM)], kind="line"))
+        # the pre-CMC line is always the regression line itself (through the intersection point), whichever
+        # CMC method is chosen; the Szyszkowski curve is drawn as well when it was fitted
+        li = getattr(t, "studio_int", t)
+        lc = math.log10(li.cmc_mM)
+        x0 = li.premicellar_x_min_mM
+        f.series.append(Series("Pre-CMC fit", [x0, li.cmc_mM],
+                               [li.gamma_at_cmc_mN_per_m + li.premicellar_slope_mN_per_m_per_log10C * (math.log10(x) - lc)
+                                for x in (x0, li.cmc_mM)], kind="line"))
+        sz = getattr(t, "studio_sz", None)
+        if sz is not None and sz.cmc_mM:
+            lo = min(tension.conc)
+            xs = [10 ** (math.log10(lo) + i * (math.log10(sz.cmc_mM) - math.log10(lo)) / 60) for i in range(61)]
+            f.series.append(Series("Szyszkowski fit", xs,
+                                   [sz.gamma0_fitted_mN_m - sz.a_fitted_mN_per_m * math.log(sz.b_fitted_per_mM * x + 1.0)
+                                    for x in xs], kind="line"))
         hi = max(tension.conc)
         f.series.append(Series("Post-CMC fit", [t.cmc_mM, hi],
                                [t.postmicellar_intercept_mN_per_m + t.postmicellar_slope_mN_per_m_per_log10C * math.log10(x)
@@ -94,8 +104,10 @@ def build_figs(study, res: Results) -> list[FigSpec]:
     rub = res.rubingh
     rows = [r for r in res.mix_rows if r.get("cmc_t")]
     if rub.get("cmc1") and rows:
+        # log axis when the plotted CMCs span more than 20x, including mixtures far below both pure CMCs
+        every = [rub["cmc1"], rub["cmc2"]] + [r["cmc_t"] for r in rows]
         f = FigSpec("cmc_mix_vs_alpha", "Mixed CMC against composition", "alpha1", "CMC of mixture (mM)",
-                    ylog=max(rub["cmc1"], rub["cmc2"]) / min(rub["cmc1"], rub["cmc2"]) > 20)
+                    ylog=max(every) / min(every) > 20)
         a = [0.0] + [r["alpha1"] for r in rows] + [1.0]
         f.series.append(Series("Measured", a, [rub["cmc2"]] + [r["cmc_t"] for r in rows] + [rub["cmc1"]]))
         grid = [i / 100 for i in range(1, 100)]

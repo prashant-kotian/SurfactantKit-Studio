@@ -48,9 +48,12 @@ def add_info_sheet(wb, values: dict | None = None):
         if allowed:
             dv = DataValidation(type="list", formula1='"' + ",".join(allowed) + '"', allow_blank=False)
             ws.add_data_validation(dv); dv.add(c)
-    ws["D4"] = "ionic: Gibbs n = 2 without salt, n = 1 with excess salt; nonionic: n = 1."
+    ws["D4"] = ("ionic: Gibbs n = 2 without salt, n = 1 with excess salt; ionic divalent (gemini or dianion, two "
+                "counterions): n = 3 without salt; nonionic: n = 1.")
     ws["D11"] = "Rosen beta-sigma is read where the surface tension is (solvent - this value); 20 is the usual choice."
     ws["D13"] = "Display only: every value is stored and calculated at full precision."
+    ws["D14"] = ("Used for every CMC, beta and Solver sheet in the output; both the regression-intersection and the "
+                 "Szyszkowski CMC are always listed on the Results sheets.")
     _widths(ws, {1: 44, 2: 18, 4: 90})
     return ws
 

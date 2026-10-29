@@ -10,7 +10,7 @@ from surfkit_studio.catalog import TECHNIQUES, tiers, tree
 from surfkit_studio.catalog.base import RunInput
 
 EX = Path(__file__).resolve().parents[1] / "examples"
-TOOLKIT_TEST = Path(r"H:\CodeProjects\Surfactant-Toolkit\tests\test_curve_analysis.py")
+TOOLKIT_TEST = Path(r"D:\CodeProjects\Surfactant-Toolkit\tests\test_curve_analysis.py")   # moved off H: 2026-10-29
 
 
 def load(name):
@@ -56,12 +56,27 @@ def test_conductivity_slopes_match_the_plotted_split():
 
 
 def test_every_cmc_method_runs_and_compare_reports_the_spread():
-    for m in ("rss", "tangential", "derivative", "sigmoid_bootstrap", "szyszkowski"):
+    for m in ("rss", "intersection", "szyszkowski_curve", "tangential", "derivative", "sigmoid_bootstrap",
+              "szyszkowski"):
         r = TECHNIQUES["cmc_tensiometry"].run(RunInput(sds(), IONIC, m, {}))
         assert r.provides["cmc_mM"] > 0 and r.figures
     r = TECHNIQUES["cmc_tensiometry"].run(RunInput(sds(), IONIC, "compare", {}))
     spread = next(v for v in r.values if v.label.startswith("Spread"))
     assert spread.value > 1.0 and any("disagree" in w for w in r.warnings)
+    labels = [v.label for v in r.values]
+    assert "CMC, Regression intersection" in labels and "CMC, Szyszkowski nonlinear curve" in labels
+
+
+def test_new_cmc_methods_report_the_toolkit_values():
+    from surfactantkit import curve_analysis as ca
+    d = sds()
+    r = TECHNIQUES["cmc_tensiometry"].run(RunInput(d, IONIC, "intersection", {}))
+    assert r.provides["cmc_mM"] == ca.cmc_from_surface_tension_curve(d["conc"], d["gamma"], method="intersection").cmc_mM
+    r = TECHNIQUES["cmc_tensiometry"].run(RunInput(d, IONIC, "szyszkowski_curve", {}))
+    sz = ca.cmc_via_szyszkowski_plateau_intersection(d["conc"], d["gamma"], system_type=IONIC["system_type"],
+                                                     temperature_K=IONIC["temperature_K"])
+    assert r.provides["cmc_mM"] == sz.cmc_mM
+    assert any(v.label == "Surface tension at CMC (Szyszkowski)" for v in r.values)
 
 
 def test_derived_chain_surface_excess_isotherm_gibbs():
