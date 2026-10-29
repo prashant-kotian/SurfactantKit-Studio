@@ -21,4 +21,3 @@ fi
 "$VPY" -m pip install -e .
 echo
 echo "Installed. Start it with ./run_studio.sh (opens http://127.0.0.1:8770)."
-echo "Optional local AI chat: install Ollama (https://ollama.com) and run: ollama pull qwen3:1.7b"

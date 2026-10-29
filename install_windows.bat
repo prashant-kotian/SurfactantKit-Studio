@@ -31,7 +31,6 @@ echo Installing SurfactantKit Studio ...
 
 echo.
 echo Installed. Start it with run_studio.bat (it opens http://127.0.0.1:8770 in your browser).
-echo Optional local AI chat: install Ollama from https://ollama.com and run:  ollama pull qwen3:1.7b
 pause
 exit /b 0
 

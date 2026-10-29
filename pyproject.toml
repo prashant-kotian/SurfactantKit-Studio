@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Prashant D. Kotian" }]
-keywords = ["surfactant", "CMC", "tensiometry", "conductivity", "micellization", "local-first", "ollama"]
+keywords = ["surfactant", "CMC", "tensiometry", "conductivity", "micellization", "local-first"]
 dependencies = [
     "surfactantkit[calc]",
     "fastapi>=0.110",
@@ -34,7 +34,7 @@ surfkit-studio = "surfkit_studio.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-surfkit_studio = ["static/*"]
+surfkit_studio = ["static/*", "knowledge/*.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

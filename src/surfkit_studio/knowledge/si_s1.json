@@ -1,0 +1,1529 @@
+{
+ "source": "SurfactantKit Supporting Information, Section S1 (toolkit techniques)",
+ "s1_source_sha256": "1fe688413fc48cc6aaf834de691f2ffce1869637774ad9dbd6e62d87cc042e42",
+ "sections": [
+  {
+   "id": "S1.1",
+   "title": "Adsorption at the air-water interface",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "Below the CMC a surfactant lowers the surface tension because it accumulates at the interface. The Gibbs adsorption equation relates the surface excess to the slope of surface tension against the logarithm of concentration, and an adsorption isotherm with its equation of state describes the whole pre-CMC curve.",
+     "refs": [
+      "Rosen 2012"
+     ],
+     "ref_texts": [
+      "M. J. Rosen and J. T. Kunjappu, Surfactants and Interfacial Phenomena, Wiley, Hoboken, 4th edn, 2012. DOI: 10.1002/9781118228920."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "gibbs",
+     "text": "Gamma_max = -1/(nRT) (d gamma)/(d ln C)",
+     "latex": "\\Gamma_{\\max} = -\\frac{1}{nRT}\\,\\frac{d\\gamma}{d\\ln C}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Here n = 1 for a nonionic surfactant or an ionic surfactant in excess inert electrolyte and n = 2 for a 1:1 ionic surfactant without added salt. The slope is entered in mN/m per natural-log unit, so the surface excess is in mol/m^2. The minimum area per molecule follows from it.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "amin",
+     "text": "A_min = (10^18)/(N_A Gamma_max) (nm^2)",
+     "latex": "A_{\\min} = \\frac{10^{18}}{N_{\\mathrm{A}}\\,\\Gamma_{\\max}}\\quad(\\mathrm{nm}^2)"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The Szyszkowski equation, the equation of state of the Langmuir isotherm, gives the surface tension at any pre-CMC concentration from the solvent surface tension, the saturation excess and the adsorption constant K.",
+     "refs": [
+      "Langmuir 1918",
+      "Szyszkowski 1908"
+     ],
+     "ref_texts": [
+      "I. Langmuir, J. Am. Chem. Soc., 1918, 40, 1361-1403. DOI: 10.1021/ja02242a004.",
+      "B. von Szyszkowski, Z. Phys. Chem., 1908, 64, 385-414. DOI: 10.1515/zpch-1908-6425."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "szysz",
+     "text": "gamma(C) = gamma0 - nRT Gamma_max ln(1 + KC)",
+     "latex": "\\gamma(C) = \\gamma_0 - nRT\\,\\Gamma_{\\max}\\ln(1 + KC)"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The Frumkin isotherm adds a lateral-interaction parameter a, positive for attraction between adsorbed molecules; its equation of state reduces exactly to equation [eq:szysz] at a = 0.",
+     "refs": [
+      "Frumkin 1925"
+     ],
+     "ref_texts": [
+      "A. Frumkin, Z. Phys. Chem., 1925, 116, 466-484. DOI: 10.1515/zpch-1925-11629."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "frumkin",
+     "text": "KC = theta/(1-theta) exp(-2a theta)",
+     "latex": "KC = \\frac{\\theta}{1-\\theta}\\,\\exp(-2a\\theta)"
+    },
+    {
+     "type": "eq",
+     "key": "frumkineos",
+     "text": "gamma(C) = gamma0 + nRT Gamma_max [ln(1-theta) + a theta^2]",
+     "latex": "\\gamma(C) = \\gamma_0 + nRT\\,\\Gamma_{\\max}\\left[\\ln(1-\\theta) + a\\theta^2\\right]"
+    },
+    {
+     "type": "p",
+     "kind": "implementation",
+     "text": "The prefactor n is selected by a required categorical argument (nonionic, ionic with excess electrolyte, or ionic without added salt); there is no default, and an unstated electrolyte condition raises an error instead of returning a number. K is fitted by golden-section search over ln K between 1e-8 and 1e8 with the surface excess held at its value from equation [eq:gibbs]. The Frumkin coverage is found by scanning theta on a 2000-point grid and refining the first sign change by bisection; for a >= 2 the isotherm has several roots (two-dimensional condensation) and the smallest is returned with a warning. K and a are fitted jointly by a grid over a in [-4, 4] followed by golden-section refinement, with ln K refitted at each a. The choice between the two isotherms uses the Bayesian information criterion, in which the Frumkin model pays for its second parameter.",
+     "refs": [
+      "Schwarz 1978"
+     ],
+     "ref_texts": [
+      "G. Schwarz, Ann. Stat., 1978, 6, 461-464. DOI: 10.1214/aos/1176344136."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "bic",
+     "text": "BIC = N ln(RSS/N) + p ln N",
+     "latex": "\\mathrm{BIC} = N\\ln\\left(\\frac{\\mathrm{RSS}}{N}\\right) + p\\ln N"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Dynamic adsorption. The Ward-Tordai equation gives the surface excess of a freshly formed interface supplied by diffusion from a solution of concentration c0, with cs the subsurface concentration.",
+     "refs": [
+      "Ward 1946"
+     ],
+     "ref_texts": [
+      "A. F. H. Ward and L. Tordai, J. Chem. Phys., 1946, 14, 453-461. DOI: 10.1063/1.1724167."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "wt",
+     "text": "Gamma(t) = 2c0 sqrt((Dt)/pi) - 2 sqrt(D/pi) integral from 0 to sqrt(t) of c_s(t-tau) d sqrt(tau)",
+     "latex": "\\Gamma(t) = 2c_0\\sqrt{\\frac{Dt}{\\pi}} - 2\\sqrt{\\frac{D}{\\pi}}\\int_0^{\\sqrt{t}}c_s(t-\\tau)\\,d\\sqrt{\\tau}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The integral is evaluated by product integration: cs is taken as piecewise linear on a geometrically spaced time grid that starts far below the first output time, and the kernel is integrated exactly on each interval. In the Langmuir mode the new cs at each node follows in closed form from a quadratic, so that the diffusive supply equals the Langmuir excess; in the fixed-subsurface mode the result reduces to the exact first term. Concentrations are converted from mol/L to mol/m^3 inside the integral, so the excess is in mol/m^2. A second, finite-difference solver couples diffusion on a grid refined towards the surface to a kinetic boundary condition, dGamma/dt = kacs(Gammamax - Gamma) - koffGamma with ka = K koff, solved together in each implicit time step, with time steps proportional to t and Richardson extrapolation. The two solvers agree to about 1e-4 in the limit of fast adsorption, and both reproduce the exact solution for a linear isotherm. The surface tension follows from the surface excess by equation [eq:frumkineos] with a = 0, the equation of state of the same Langmuir isotherm, so the long-time limit is equation [eq:szysz]; its inverse fits D, K, Gammamax and koff to one dynamic surface tension curve and reports the parameter correlation, because K and Gammamax are not separately identifiable from a single transient (only their product is).",
+     "refs": [
+      "Crank 1947"
+     ],
+     "ref_texts": [
+      "J. Crank and P. Nicolson, Math. Proc. Camb. Phil. Soc., 1947, 43, 50-67. DOI: 10.1017/s0305004100023197."
+     ]
+    },
+    {
+     "type": "p",
+     "kind": "validity",
+     "text": "The isotherms apply below the CMC only. A Frumkin parameter at the edge of its range, or a Langmuir selection while the Frumkin fit gives |a| > 0.3, is returned as a warning that the data cannot resolve the interaction term.",
+     "refs": [],
+     "ref_texts": []
+    }
+   ],
+   "tools": [
+    [
+     "gibbs_surface_excess",
+     "T1"
+    ],
+    [
+     "gibbs_area_per_molecule",
+     "T1"
+    ],
+    [
+     "szyszkowski_predict_surface_tension",
+     "T1"
+    ],
+    [
+     "szyszkowski_fit_K",
+     "T2"
+    ],
+    [
+     "frumkin_predict_surface_tension",
+     "T2"
+    ],
+    [
+     "frumkin_theta",
+     "T2"
+    ],
+    [
+     "select_isotherm_model",
+     "T2"
+    ],
+    [
+     "ward_tordai_adsorption",
+     "T2"
+    ],
+    [
+     "dynamic_surface_tension_forward",
+     "T2"
+    ],
+    [
+     "dynamic_surface_tension_ode",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.2",
+   "title": "CMC, counterion binding and aggregate size from measured curves",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "A property that changes slope at the CMC is fitted with one line on each side of the break. Surface tension is linear in log C below the CMC and nearly flat above it; specific conductivity is linear in C on both sides with a smaller slope above the CMC, because micelles carry charge less efficiently than free ions.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "twoseg",
+     "text": "gamma = a1 + b1 log10 C (C<CMC); gamma = a2 + b2 log10 C (C>CMC)",
+     "latex": "\\gamma = a_1 + b_1\\log_{10}C\\ (C<\\mathrm{CMC}),\\qquad \\gamma = a_2 + b_2\\log_{10}C\\ (C>\\mathrm{CMC})"
+    },
+    {
+     "type": "p",
+     "kind": "implementation",
+     "text": "Every split leaving at least three points per segment is fitted by least squares and the split with the smallest total residual is kept; a three-segment model (flat baseline, decline, plateau) is also fitted and chosen by BIC (equation [eq:bic]) when the data show a lag at low concentration. The CMC is the midpoint, in log concentration, between the last declining and the first plateau point. Tangent intersection and steepest-slope estimators are available as alternatives. The returned pre-CMC slope per ln C feeds equation [eq:gibbs]. C20, the concentration that lowers the surface tension by 20 mN/m, and pC20 = -log10 C20 (mol/L) are reported only when the decline reaches 20 mN/m before the CMC. For conductivity the CMC is the intersection of the two lines, and the degree of counterion binding follows from the slope ratio, a commonly used but approximate measure; a second-derivative estimator and a molar-conductivity form are also available.",
+     "refs": [
+      "Zana 1996"
+     ],
+     "ref_texts": [
+      "R. Zana, Langmuir, 1996, 12, 1208-1211. DOI: 10.1021/la950691q."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "cond",
+     "text": "CMC = (a2-a1)/(b1-b2); beta = 1-b2/b1",
+     "latex": "\\mathrm{CMC} = \\frac{a_2-a_1}{b_1-b_2},\\qquad \\beta = 1-\\frac{b_2}{b_1}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Aggregation number. Steady-state fluorescence quenching gives the mean aggregation number from the slope of ln(I0/I) against quencher concentration, with Ct the total surfactant concentration.",
+     "refs": [
+      "Turro 1978"
+     ],
+     "ref_texts": [
+      "N. J. Turro and A. Yekta, J. Am. Chem. Soc., 1978, 100, 5951-5952. DOI: 10.1021/ja00486a062."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "turro",
+     "text": "ln(I0/I) = (N [Q])/(C_t-CMC)",
+     "latex": "\\ln\\frac{I_0}{I} = \\frac{N\\,[Q]}{C_t-\\mathrm{CMC}}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Static light scattering uses the Debye plot of Kc/DeltaR against the micellized concentration, whose intercept is the inverse micelle molar mass.",
+     "refs": [
+      "Debye 1947"
+     ],
+     "ref_texts": [
+      "P. Debye, J. Phys. Chem., 1947, 51, 18-32. DOI: 10.1021/j150451a002."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "debye",
+     "text": "K = (4 pi^2 n^2 (dn/dc)^2)/(N_A lambda^4); (Kc)/(Delta R) = 1/M_w + 2A2 c",
+     "latex": "K = \\frac{4\\pi^2 n^2 (dn/dc)^2}{N_{\\mathrm{A}}\\lambda^4},\\qquad \\frac{Kc}{\\Delta R} = \\frac{1}{M_w} + 2A_2c"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "A diffusion coefficient gives an aggregation number through the Stokes-Einstein radius (equation [eq:se]) and the micelle partial specific volume, and sedimentation velocity through the Svedberg equation; the partial specific volume can be estimated from the Tanford tail volume (equation [eq:tanv]) plus a supplied head-group molar volume.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "nagg",
+     "text": "N = ((4/3) pi R_h^3 N_A)/(v_bar M0); M = (RTs)/(D(1-v_bar rho)); v_bar = (V_tail N_A + V_head)/M0",
+     "latex": "N = \\frac{(4/3)\\pi R_h^3 N_{\\mathrm{A}}}{\\bar v M_0},\\qquad M = \\frac{RTs}{D(1-\\bar v\\rho)},\\qquad \\bar v = \\frac{V_{\\mathrm{tail}}N_{\\mathrm{A}} + V_{\\mathrm{head}}}{M_0}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Uncertainty and size distributions. A four-parameter sigmoid, y = lo + (hi - lo)[1 + tanh((x - x0)/w)]/2 with x = log10 C and CMC = 10^x0, is fitted to the curve and residuals are resampled with replacement to give a percentile interval; more than 10% failed refits marks the result as not converged. A DLS field autocorrelation is inverted to an intensity-weighted size distribution by non-negative least squares with second-difference smoothing, the smoothing weight chosen at the corner of the L-curve, using Gamma = Dq^2, q = 4 pi n sin(theta/2)/lambda and d = kT/(3 pi eta D).",
+     "refs": [
+      "Efron 1979",
+      "Provencher 1982"
+     ],
+     "ref_texts": [
+      "B. Efron, Ann. Stat., 1979, 7, 1-26. DOI: 10.1214/aos/1176344552.",
+      "S. W. Provencher, Computer Physics Communications, 1982, 27, 213-227. DOI: 10.1016/0010-4655(82)90173-4."
+     ]
+    },
+    {
+     "type": "p",
+     "kind": "validity",
+     "text": "Conductometry is refused for a curve whose slope rises above the break (not an ionic micellization signature); a non-positive Debye intercept, a total surfactant concentration at or below the CMC in quenching, and a dn/dc of zero raise errors. Reference dn/dc values are returned only for tabulated surfactants.",
+     "refs": [],
+     "ref_texts": []
+    }
+   ],
+   "tools": [
+    [
+     "aggregation_number_from_quenching",
+     "T2"
+    ],
+    [
+     "dn_dc_reference",
+     "T1"
+    ],
+    [
+     "aggregation_number_from_sls",
+     "T2"
+    ],
+    [
+     "aggregation_number_from_dls",
+     "T2"
+    ],
+    [
+     "estimate_partial_specific_volume",
+     "T2"
+    ],
+    [
+     "aggregation_number_from_svedberg",
+     "T2"
+    ],
+    [
+     "cmc_from_surface_tension_curve",
+     "T1"
+    ],
+    [
+     "cmc_from_conductivity",
+     "T2"
+    ],
+    [
+     "bootstrap_cmc",
+     "T2"
+    ],
+    [
+     "dls_size_distribution",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.3",
+   "title": "Mixed micellization",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "In a binary mixture of surfactants with bulk mole fraction alpha1 and pure CMCs CMC1 and CMC2, ideal mixing gives Clint's mixed CMC and Motomura's ideal micellar composition.",
+     "refs": [
+      "Clint 1975",
+      "Motomura 1984"
+     ],
+     "ref_texts": [
+      "J. H. Clint, J. Chem. Soc., Faraday Trans. 1, 1975, 71, 1327. DOI: 10.1039/f19757101327.",
+      "K. Motomura, M. Yamanaka and M. Aratono, Colloid Polym. Sci., 1984, 262, 948-955. DOI: 10.1007/bf01490027."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "clint",
+     "text": "1/CMC12 = alpha1/CMC1 + (1-alpha1)/CMC2; X1^(id) = (alpha1 CMC2)/(alpha1 CMC2 + (1-alpha1) CMC1)",
+     "latex": "\\frac{1}{\\mathrm{CMC}_{12}} = \\frac{\\alpha_1}{\\mathrm{CMC}_1} + \\frac{1-\\alpha_1}{\\mathrm{CMC}_2},\\qquad X_1^{\\mathrm{id}} = \\frac{\\alpha_1\\mathrm{CMC}_2}{\\alpha_1\\mathrm{CMC}_2 + (1-\\alpha_1)\\mathrm{CMC}_1}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Regular-solution theory gives the micellar composition x1 as the root of Rubingh's mass balance and the interaction parameter beta from it; the activity coefficients and the excess free energy follow.",
+     "refs": [
+      "Rubingh 1979",
+      "Holland 1983"
+     ],
+     "ref_texts": [
+      "D. N. Rubingh, in Solution Chemistry of Surfactants, ed. K. L. Mittal, Plenum Press, New York, 1979, vol. 1, pp. 337-354. DOI: 10.1007/978-1-4615-7880-2_15.",
+      "P. M. Holland and D. N. Rubingh, J. Phys. Chem., 1983, 87, 1984-1990. DOI: 10.1021/j100234a030."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "rubingh",
+     "text": "x1^2 ln((alpha1 CMC12)/(x1 CMC1)) = (1-x1)^2 ln(((1-alpha1) CMC12)/((1-x1) CMC2)); beta = (ln [alpha1 CMC12/(x1 CMC1)])/((1-x1)^2)",
+     "latex": "x_1^2\\ln\\frac{\\alpha_1\\mathrm{CMC}_{12}}{x_1\\mathrm{CMC}_1} = (1-x_1)^2\\ln\\frac{(1-\\alpha_1)\\mathrm{CMC}_{12}}{(1-x_1)\\mathrm{CMC}_2},\\qquad \\beta = \\frac{\\ln[\\alpha_1\\mathrm{CMC}_{12}/(x_1\\mathrm{CMC}_1)]}{(1-x_1)^2}"
+    },
+    {
+     "type": "eq",
+     "key": "rst",
+     "text": "f1 = exp(beta(1-x1)^2), f2 = exp(beta x1^2), G^E = RT [x1 ln f1 + (1-x1) ln f2]",
+     "latex": "f_1 = e^{\\beta(1-x_1)^2},\\quad f_2 = e^{\\beta x_1^2},\\quad G^E = RT\\,[x_1\\ln f_1 + (1-x_1)\\ln f_2]"
+    },
+    {
+     "type": "p",
+     "kind": "implementation",
+     "text": "The root is located on a 4000-point grid in (0, 1) and refined by bisection; when no root exists the solver returns none, and the series tool reports the compositions without a physical solution instead of forcing one. A series value of beta is the mean of the pointwise values with its standard deviation. Rosen's monolayer form uses the same equation with the concentrations that reach a chosen surface tension in place of CMCs. Rodenas' composition follows from the Gibbs-Duhem relation and the local slope of ln CMC12 against alpha1, obtained from a local quadratic through neighbouring points.",
+     "refs": [
+      "Rosen 2012",
+      "Rodenas 1999"
+     ],
+     "ref_texts": [
+      "M. J. Rosen and J. T. Kunjappu, Surfactants and Interfacial Phenomena, Wiley, Hoboken, 4th edn, 2012. DOI: 10.1002/9781118228920.",
+      "E. Rodenas, M. Valiente and M. S. Villafruela, J. Phys. Chem. B, 1999, 103, 4549-4554. DOI: 10.1021/jp981871m."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "rodenas",
+     "text": "X1 = alpha1 - alpha1(1-alpha1)(d ln CMC12)/(d alpha1); f1 = (alpha1 CMC12)/(X1 CMC1)",
+     "latex": "X_1 = \\alpha_1 - \\alpha_1(1-\\alpha_1)\\frac{d\\ln\\mathrm{CMC}_{12}}{d\\alpha_1},\\qquad f_1 = \\frac{\\alpha_1\\mathrm{CMC}_{12}}{X_1\\mathrm{CMC}_1}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The asymmetric Margules model of the equation-oriented mixed micellization model (EOMMM) uses two parameters, w12 and w21 in units of RT, and reduces to the regular solution when they are equal.",
+     "refs": [
+      "Schulz 2016"
+     ],
+     "ref_texts": [
+      "E. P. Schulz and G. A. Durand, Comput. Chem. Eng., 2016, 87, 145-153. DOI: 10.1016/j.compchemeng.2015.12.026."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "margules",
+     "text": "g = x1 x2(x2 w12 + x1 w21), ln f1 = 2x1 x2 w21 + x2^2 w12 - 2g, ln f2 = 2x1 x2 w12 + x1^2 w21 - 2g",
+     "latex": "g = x_1x_2(x_2w_{12} + x_1w_{21}),\\quad \\ln f_1 = 2x_1x_2w_{21} + x_2^2w_{12} - 2g,\\quad \\ln f_2 = 2x_1x_2w_{12} + x_1^2w_{21} - 2g"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Each composition must satisfy (CMC12 alphai/CMCi)^2/r_i = xifi for both components, with ri the number of ions per molecule. The global fit searches the (w12, w21) plane for the pair that minimizes the total infeasibility of these conditions within a stated CMC margin; a companion tool narrows the margin by bisection to the smallest feasible value, and another returns every distinct feasible basin because the optimum need not be unique.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Maeda's free energy of micellization of an ionic-nonionic pair and the Corrin-Harkins dependence of the CMC on counterion concentration are also implemented; the latter is fitted to two measured points of the same system.",
+     "refs": [
+      "Maeda 1995",
+      "Corrin 1947"
+     ],
+     "ref_texts": [
+      "H. Maeda, J. Colloid Interface Sci., 1995, 172, 98-105. DOI: 10.1006/jcis.1995.1230.",
+      "M. L. Corrin and W. D. Harkins, J. Am. Chem. Soc., 1947, 69, 683-688. DOI: 10.1021/ja01195a065."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "maeda",
+     "text": "(Delta G_M)/(RT) = B0 + B1 X1 + B2 X1^2, B0 = ln X_cmc,2, B1 + B2 = ln((X_cmc,1)/(X_cmc,2)), B2 = -beta",
+     "latex": "\\frac{\\Delta G_M}{RT} = B_0 + B_1X_1 + B_2X_1^2,\\quad B_0 = \\ln X_{\\mathrm{cmc},2},\\quad B_1 + B_2 = \\ln\\frac{X_{\\mathrm{cmc},1}}{X_{\\mathrm{cmc},2}},\\quad B_2 = -\\beta"
+    },
+    {
+     "type": "eq",
+     "key": "corrin",
+     "text": "log10 CMC = -g log10 C_counterion + b",
+     "latex": "\\log_{10}\\mathrm{CMC} = -g\\log_{10}C_{\\mathrm{counterion}} + b"
+    },
+    {
+     "type": "p",
+     "kind": "model selection",
+     "text": "Given only a composition series and the pure CMCs, Clint (no parameter), Rubingh (one) and EOMMM (two) are fitted to ln CMC12 and compared by BIC. Rosen, Corrin-Harkins and Maeda are not entered because they need different experiments or reuse the Rubingh solution, and the Rodenas composition is reported alongside, not as a competitor.",
+     "refs": [],
+     "ref_texts": []
+    }
+   ],
+   "tools": [
+    [
+     "clint_ideal_cmc",
+     "T1"
+    ],
+    [
+     "rubingh_solve",
+     "T1"
+    ],
+    [
+     "rubingh_beta_regression",
+     "T2"
+    ],
+    [
+     "motomura_ideal_composition",
+     "T2"
+    ],
+    [
+     "rodenas_x1",
+     "T1+"
+    ],
+    [
+     "rodenas_x1_from_series",
+     "T2"
+    ],
+    [
+     "rodenas_activity_coefficients",
+     "T1"
+    ],
+    [
+     "rubingh_activity_coefficients",
+     "T1"
+    ],
+    [
+     "asymmetric_margules_activity_coefficients",
+     "T1"
+    ],
+    [
+     "eommm_global_fit",
+     "T1+"
+    ],
+    [
+     "eommm_find_minimal_feasible_margin",
+     "T2"
+    ],
+    [
+     "eommm_global_fit_all_optima",
+     "T2"
+    ],
+    [
+     "maeda_free_energy_of_micellization",
+     "T1"
+    ],
+    [
+     "excess_free_energy",
+     "T1"
+    ],
+    [
+     "rosen_monolayer_solve",
+     "T2"
+    ],
+    [
+     "corrin_harkins_predict",
+     "T2"
+    ],
+    [
+     "select_mixture_model",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.4",
+   "title": "Thermodynamics of micellization",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "With the CMC on the mole-fraction scale, X = CMC/(CMC + 55.5) for CMC in mol/L, the pseudo-phase model gives the standard free energy of micellization. For an ionic surfactant the factor is 1 + beta = 2 - alpha, where beta is the degree of counterion binding and alpha the degree of dissociation; for a nonionic surfactant it is 1. The factor is a required input and is never assumed.",
+     "refs": [
+      "Zana 1996"
+     ],
+     "ref_texts": [
+      "R. Zana, Langmuir, 1996, 12, 1208-1211. DOI: 10.1021/la950691q."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "dg",
+     "text": "Delta G_mic^o = (1+beta)RT ln X_cmc",
+     "latex": "\\Delta G_{\\mathrm{mic}}^{\\circ} = (1+\\beta)RT\\ln X_{\\mathrm{cmc}}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The mass-action model of a single equilibrium nS = Mn gives a free energy that depends on the aggregation number, and the critical micellization degree in the same model takes one of two forms depending on whether the CMC is defined by the second derivative of the degree of micellization in c or in ln c.",
+     "refs": [
+      "Rusanov 2014"
+     ],
+     "ref_texts": [
+      "A. I. Rusanov, Langmuir, 2014, 30, 14443-14451. DOI: 10.1021/la503770a."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "massaction",
+     "text": "(Delta G_mic)/(RT) = (1+1/n) ln X_cmc - 1/n ln n; alpha_m = (sqrt(n/2)-1)/(n-1) or 1/(sqrt(n)+1)",
+     "latex": "\\frac{\\Delta G_{\\mathrm{mic}}}{RT} = \\left(1+\\frac{1}{n}\\right)\\ln X_{\\mathrm{cmc}} - \\frac{1}{n}\\ln n,\\qquad \\alpha_m = \\frac{\\sqrt{n/2}-1}{n-1}\\ \\ \\mathrm{or}\\ \\ \\frac{1}{\\sqrt{n}+1}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Enthalpy and entropy. Two CMCs give the van 't Hoff enthalpy; three or more temperatures are fitted with a heat-capacity term relative to a reference temperature Tr, and the entropy follows from the other two quantities.",
+     "refs": [
+      "Kantonen 2018"
+     ],
+     "ref_texts": [
+      "S. A. Kantonen, N. M. Henriksen and M. K. Gilson, Biochim. Biophys. Acta, Gen. Subj., 2018, 1862, 692-704. DOI: 10.1016/j.bbagen.2017.11.020."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "vh",
+     "text": "Delta H = (1+beta)R (ln X2 - ln X1)/(1/T2 - 1/T1); Delta S = (Delta H - Delta G)/T",
+     "latex": "\\Delta H = (1+\\beta)R\\,\\frac{\\ln X_2 - \\ln X_1}{1/T_2 - 1/T_1},\\qquad \\Delta S = \\frac{\\Delta H - \\Delta G}{T}"
+    },
+    {
+     "type": "eq",
+     "key": "kantonen",
+     "text": "Delta G(T) = Delta H_r - T Delta S_r + Delta C_p [(T - T_r) - T ln(T/T_r)]",
+     "latex": "\\Delta G(T) = \\Delta H_r - T\\Delta S_r + \\Delta C_p\\left[(T - T_r) - T\\ln\\frac{T}{T_r}\\right]"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Cluster-size distribution and homologous series. A canonical Metropolis Monte Carlo simulation of labelled monomers with cluster energy E(n) = -epsilon(n - 1) samples the fraction of monomers in clusters of each size; for small systems the exact Boltzmann sum over integer partitions is returned alongside. The Klevens relation is fitted to a measured homologous series by least squares with prediction intervals, and predictions outside the fitted chain lengths are flagged as extrapolations.",
+     "refs": [
+      "Metropolis 1953",
+      "Klevens 1953"
+     ],
+     "ref_texts": [
+      "N. Metropolis, A. W. Rosenbluth, M. N. Rosenbluth, A. H. Teller and E. Teller, J. Chem. Phys., 1953, 21, 1087-1092. DOI: 10.1063/1.1699114.",
+      "H. B. Klevens, J. Am. Oil Chem. Soc., 1953, 30, 74-80. DOI: 10.1007/bf02635002."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "klevens",
+     "text": "log10 CMC = A - Bn_C",
+     "latex": "\\log_{10}\\mathrm{CMC} = A - Bn_C"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Reference values. The counterion-binding reference returns alpha for SDS from electron paramagnetic resonance and for DTAB and CTAB from the literature, each with a stated confidence; any other surfactant is refused.",
+     "refs": [
+      "Bales 2001"
+     ],
+     "ref_texts": [
+      "B. L. Bales, J. Phys. Chem. B, 2001, 105, 6798-6804. DOI: 10.1021/jp004576m."
+     ]
+    }
+   ],
+   "tools": [
+    [
+     "counterion_binding_degree",
+     "T2"
+    ],
+    [
+     "counterion_binding_degree_reference",
+     "T1"
+    ],
+    [
+     "gibbs_free_energy_micellization",
+     "T1"
+    ],
+    [
+     "mass_action_free_energy_of_micellization",
+     "T2"
+    ],
+    [
+     "critical_micellization_degree",
+     "T1"
+    ],
+    [
+     "vant_hoff_enthalpy",
+     "T1+/T2"
+    ],
+    [
+     "vant_hoff_multi_point_fit",
+     "T2"
+    ],
+    [
+     "entropy_of_micellization",
+     "dependent"
+    ],
+    [
+     "mc_aggregation_distribution",
+     "T2"
+    ],
+    [
+     "cmc_homologous_series",
+     "T1+"
+    ]
+   ]
+  },
+  {
+   "id": "S1.5",
+   "title": "Molecular packing and a-priori CMC",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "Tanford's relations give the volume and the maximum extended length of a saturated alkyl tail of nC carbons, and with the head-group area a0 the critical packing parameter predicts the aggregate shape.",
+     "refs": [
+      "Tanford 1972",
+      "Israelachvili 1976"
+     ],
+     "ref_texts": [
+      "C. Tanford, J. Phys. Chem., 1972, 76, 3020-3024. DOI: 10.1021/j100665a018.",
+      "J. N. Israelachvili, D. J. Mitchell and B. W. Ninham, J. Chem. Soc., Faraday Trans. 2, 1976, 72, 1525. DOI: 10.1039/f29767201525."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "tanv",
+     "text": "v = 27.4 + 26.9 n_C (Angstrom^3); l_c = 1.5 + 1.265 n_C (Angstrom); CPP = v/(a0 l_c)",
+     "latex": "v = 27.4 + 26.9\\,n_C\\ (\\mathrm{\\AA}^3),\\qquad l_c = 1.5 + 1.265\\,n_C\\ (\\mathrm{\\AA}),\\qquad \\mathrm{CPP} = \\frac{v}{a_0l_c}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "A CPP up to 1/3 indicates spherical micelles, 1/3 to 1/2 cylinders, 1/2 to 1 vesicles or bilayers and above 1 inverted structures. The spherical aggregation number is the core volume over the tail volume, N = (4/3) pi lc^3/v; the Hartley-Tanford reasoning is flagged as weaker for short tails. For rod-like micelles an axial ratio is estimated from the packing geometry for use in equation [eq:perrin].",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Head-group terms. For an ionic surfactant the equilibrium area per molecule depends on chain length through the Debye length at the CMC (Nagarajan 2002), and the head-group free energies of the molecular-thermodynamic theory are available separately: steric, dipolar (zwitterions) and ionic terms of Nagarajan and Ruckenstein, and the counterion-binding entropy, steric and self-energy terms of Srinivasan and Blankschtein (all in units of kT).",
+     "refs": [
+      "Nagarajan 2002",
+      "Nagarajan 1991",
+      "Puvvada 1990"
+     ],
+     "ref_texts": [
+      "R. Nagarajan, Langmuir, 2002, 18, 31-38. DOI: 10.1021/la010831y.",
+      "R. Nagarajan and E. Ruckenstein, Langmuir, 1991, 7, 2934-2969. DOI: 10.1021/la00060a012.",
+      "S. Puvvada and D. Blankschtein, J. Chem. Phys., 1990, 92, 3710-3724. DOI: 10.1063/1.457829."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "nagarea",
+     "text": "a_e = A/(sqrt(1 + l/kappa^(-1))); (mu_st)/(kT) = -ln(1-a_p/a)",
+     "latex": "a_e = \\frac{A}{\\sqrt{1 + l/\\kappa^{-1}}},\\qquad \\frac{\\mu_{\\mathrm{st}}}{kT} = -\\ln\\left(1-\\frac{a_p}{a}\\right)"
+    },
+    {
+     "type": "eq",
+     "key": "blank",
+     "text": "(g_ent)/(kT) = ln(1/(1+beta)) + beta ln(beta/(1+beta)); (g_st)/(kT) = -(1+beta) ln(1-(a_h,s+beta a_h,c)/a)",
+     "latex": "\\frac{g_{\\mathrm{ent}}}{kT} = \\ln\\frac{1}{1+\\beta} + \\beta\\ln\\frac{\\beta}{1+\\beta},\\qquad \\frac{g_{\\mathrm{st}}}{kT} = -(1+\\beta)\\ln\\left(1-\\frac{a_{h,s}+\\beta a_{h,c}}{a}\\right)"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "A-priori CMC. The CMC predictor implements the standard free energy of an aggregate of g molecules of Nagarajan (1985), with the transfer and ordering terms of his equations 6 and 7, a core-water interfacial term with sigma = 50 mN/m, a steric head-group term and, for ionic heads, a Debye-Huckel electrostatic term scaled by 0.46. Spheres are used up to a core radius equal to the extended tail length and cylinders with hemispherical ends beyond it.",
+     "refs": [
+      "Nagarajan 1985"
+     ],
+     "ref_texts": [
+      "R. Nagarajan, Langmuir, 1985, 1, 331-341. DOI: 10.1021/la00063a012."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "nag5",
+     "text": "(mu_g^o - g mu1^o)/(kT) = -g(2.05 + 1.49n_C) + g(-0.5 + 0.24n_C) + (g sigma(a-a0))/(kT) - g ln(1-a_p/a) + (mu_el)/(kT)",
+     "latex": "\\frac{\\mu_g^{\\circ} - g\\mu_1^{\\circ}}{kT} = -g(2.05 + 1.49n_C) + g(-0.5 + 0.24n_C) + \\frac{g\\sigma(a-a_0)}{kT} - g\\ln\\left(1-\\frac{a_p}{a}\\right) + \\frac{\\mu_{\\mathrm{el}}}{kT}"
+    },
+    {
+     "type": "eq",
+     "key": "nagcmc",
+     "text": "X_CMC = exp [min over g of f(g)]; f(g) = (mu_g^o - g mu1^o)/(gkT)",
+     "latex": "X_{\\mathrm{CMC}} = \\exp\\left[\\min_g f(g)\\right],\\qquad f(g) = \\frac{\\mu_g^{\\circ} - g\\mu_1^{\\circ}}{gkT}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The monomer concentration at the CMC feeds back into the Debye length and the minimum is iterated to self-consistency. Head-group constants are those tabulated in the source (alkyl sulfates, potassium carboxylates, phosphine oxides, sulfoxides and polyoxyethylene); any other head group is refused. The optimal g is the CMC-relevant minimum, not a prediction of the equilibrium aggregation number.",
+     "refs": [],
+     "ref_texts": []
+    }
+   ],
+   "tools": [
+    [
+     "tanford_chain_geometry",
+     "T1"
+    ],
+    [
+     "critical_packing_parameter",
+     "T1"
+    ],
+    [
+     "estimate_axial_ratio_from_cpp_geometry",
+     "T2"
+    ],
+    [
+     "nagarajan_equilibrium_area_ionic",
+     "T1"
+    ],
+    [
+     "nagarajan_ruckenstein_headgroup_reference",
+     "T1"
+    ],
+    [
+     "nagarajan_ruckenstein_steric_free_energy",
+     "T2"
+    ],
+    [
+     "nagarajan_ruckenstein_dipole_free_energy",
+     "T2"
+    ],
+    [
+     "nagarajan_ruckenstein_ionic_free_energy",
+     "T2"
+    ],
+    [
+     "blankschtein_entropy_of_binding",
+     "T2"
+    ],
+    [
+     "blankschtein_steric_free_energy",
+     "T2"
+    ],
+    [
+     "blankschtein_counterion_self_energy",
+     "T2"
+    ],
+    [
+     "aggregation_number",
+     "T2"
+    ],
+    [
+     "nagarajan_cmc_predictor",
+     "T1"
+    ],
+    [
+     "nagarajan_free_energy_terms",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.6",
+   "title": "HLB, HLD, EACN and cloud point",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "HLB. Griffin's HLB is twenty times the mass fraction of the hydrophilic part, and Davies' HLB adds group numbers to 7; an unlisted group raises an error. For polyethoxylated nonionics the effective-chain-length method of Guo, Rong and Ying applies the Davies weights to effective EO and CH2 counts, and a rule-based tool recommends Griffin for gemini and glycolipid structures, where group additivity does not hold.",
+     "refs": [
+      "Griffin 1949",
+      "Griffin 1954",
+      "Davies 1957",
+      "Guo 2006"
+     ],
+     "ref_texts": [
+      "W. C. Griffin, J. Soc. Cosmet. Chem., 1949, 1, 311-326.",
+      "W. C. Griffin, J. Soc. Cosmet. Chem., 1954, 5, 249-256.",
+      "J. T. Davies, in Proceedings of the 2nd International Congress of Surface Activity, Butterworths, London, 1957, vol. 1, pp. 426-438.",
+      "X. Guo, Z. Rong and X. Ying, J. Colloid Interface Sci., 2006, 298, 441-450. DOI: 10.1016/j.jcis.2005.12.009."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "hlb",
+     "text": "HLB_G = 20 M_H/M; HLB_D = 7 + sum over i of h_i - 0.475 n_CH_x",
+     "latex": "\\mathrm{HLB}_G = 20\\frac{M_H}{M},\\qquad \\mathrm{HLB}_D = 7 + \\sum_i h_i - 0.475\\,n_{\\mathrm{CH}_x}"
+    },
+    {
+     "type": "eq",
+     "key": "guo",
+     "text": "N_EO,eff = 13.45 ln N_EO - 0.16N_EO + 1.26 (N_EO<= 50); N_CH2,eff = 0.965N_CH2 - 0.178",
+     "latex": "N_{\\mathrm{EO,eff}} = 13.45\\ln N_{\\mathrm{EO}} - 0.16N_{\\mathrm{EO}} + 1.26\\ (N_{\\mathrm{EO}}\\leq 50),\\qquad N_{\\mathrm{CH_2,eff}} = 0.965N_{\\mathrm{CH_2}} - 0.178"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "HLD. The hydrophilic-lipophilic difference of an ionic or a nonionic surfactant-oil-brine system, with S the salinity in g NaCl per 100 mL, EACN the equivalent alkane carbon number of the oil, Cc the characteristic curvature of the surfactant and DeltaT = T - 25 C, is zero at the optimal (Winsor III) formulation.",
+     "refs": [
+      "Salager 1979",
+      "Acosta 2008"
+     ],
+     "ref_texts": [
+      "J. L. Salager, J. C. Morgan, R. S. Schechter, W. H. Wade and E. Vasquez, Soc. Pet. Eng. J., 1979, 19, 107-115. DOI: 10.2118/7054-pa.",
+      "E. J. Acosta and A. S. Bhakta, J. Surfactants Deterg., 2009, 12, 7-19. DOI: 10.1007/s11743-008-1092-4."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "hld",
+     "text": "HLD_ion = ln S - k EACN - alpha Delta T + C_c; HLD_non = bS - k EACN - alpha Delta T + C_c",
+     "latex": "\\mathrm{HLD}_{\\mathrm{ion}} = \\ln S - k\\,\\mathrm{EACN} - \\alpha\\Delta T + C_c,\\qquad \\mathrm{HLD}_{\\mathrm{non}} = bS - k\\,\\mathrm{EACN} - \\alpha\\Delta T + C_c"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Setting HLD = 0 gives the optimal salinity and the phase inversion temperature; a salinity scan over oils of different EACN gives k and Cc by linear regression of ln S* on EACN; blends mix linearly in Cc and in EACN. Reference tables return k, Cc and their uncertainties for named surfactant classes, quaternary ammonium surfactants and single surfactants, each with its source.",
+     "refs": [
+      "Yoga 2024"
+     ],
+     "ref_texts": [
+      "H. F. Yoga, N. R. Gasimli and R. T. Johns, SPE J., 2024, 29, 4935-4949. DOI: 10.2118/221470-pa."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "sstar",
+     "text": "S^* = exp(k EACN + alpha Delta T - C_c); C_c,mix = sum over i of chi_i C_c,i; EACN_mix = sum over i of x_i EACN_i",
+     "latex": "S^* = \\exp(k\\,\\mathrm{EACN} + \\alpha\\Delta T - C_c),\\qquad C_{c,\\mathrm{mix}} = \\sum_i\\chi_iC_{c,i},\\qquad \\mathrm{EACN}_{\\mathrm{mix}} = \\sum_i x_i\\mathrm{EACN}_i"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "EACN from structure. n-Alkanes have EACN equal to their carbon number by definition; alkylbenzenes, alkylcyclohexanes and single long-chain esters follow sourced group rules with stated bands; branched chains, bare rings, heteroatoms other than an ester and multi-fragment inputs are refused rather than estimated.",
+     "refs": [
+      "Wade 1978",
+      "Queste 2007"
+     ],
+     "ref_texts": [
+      "W. H. Wade, J. C. Morgan, R. S. Schechter, J. K. Jacobson and J. L. Salager, Soc. Pet. Eng. J., 1978, 18, 242-252. DOI: 10.2118/6844-pa.",
+      "S. Queste, J. L. Salager, R. Strey and J. M. Aubry, J. Colloid Interface Sci., 2007, 312, 98-107. DOI: 10.1016/j.jcis.2006.07.004."
+     ]
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Cloud point. For a pure alkyl ethoxylate CnEm the cloud point is the temperature at which HLD = 0 for the surfactant-water system, with the group contribution for Cc, b = 0.13, k = 0.16, cT = 0.06 per K and the apparent EACN of the ethoxylate core, 7.3. Technical-grade (polydisperse) ethoxylates are outside its scope.",
+     "refs": [
+      "Acosta 2008",
+      "Ghayour 2023",
+      "Zarate 2015"
+     ],
+     "ref_texts": [
+      "E. J. Acosta and A. S. Bhakta, J. Surfactants Deterg., 2009, 12, 7-19. DOI: 10.1007/s11743-008-1092-4.",
+      "A. Ghayour, Tenside, Surfactants, Deterg., 2023, 60, 1-12. DOI: 10.1515/tsd-2022-2464.",
+      "S. Zarate-Munoz, A. Boza Troncoso and E. Acosta, Langmuir, 2015, 31, 12000-12008. DOI: 10.1021/acs.langmuir.5b03064."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "cloud",
+     "text": "T_cp = 25 - (bS - k EACN_app + C_c)/c_T; C_c = 0.28 n + 2.4 - m",
+     "latex": "T_{\\mathrm{cp}} = 25 - \\frac{bS - k\\,\\mathrm{EACN}_{\\mathrm{app}} + C_c}{c_T},\\qquad C_c = 0.28\\,n + 2.4 - m"
+    }
+   ],
+   "tools": [
+    [
+     "hlb_from_mw",
+     "T1"
+    ],
+    [
+     "hlb_from_groups",
+     "T1"
+    ],
+    [
+     "hlb_method_recommendation",
+     "T2"
+    ],
+    [
+     "gemini_hlb_griffin_reference",
+     "T1"
+    ],
+    [
+     "derive_davies_group_number",
+     "T3"
+    ],
+    [
+     "hlb_davies_guo_ecl",
+     "T1"
+    ],
+    [
+     "hld_optimal_salinity",
+     "T1"
+    ],
+    [
+     "hld_cationic_quat_reference",
+     "T1"
+    ],
+    [
+     "hld_class_reference",
+     "T1"
+    ],
+    [
+     "hld_characteristic_curvature_reference",
+     "T1"
+    ],
+    [
+     "hld_fit_k_and_cc_from_salinity_scan",
+     "T2"
+    ],
+    [
+     "phase_inversion_temperature",
+     "T2"
+    ],
+    [
+     "eacn_group_contribution",
+     "T1+"
+    ],
+    [
+     "eacn_linear_mixing",
+     "T2"
+    ],
+    [
+     "cloud_point_estimate",
+     "T1+"
+    ]
+   ]
+  },
+  {
+   "id": "S1.7",
+   "title": "Electrostatics and electrokinetics",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "The ionic strength and the Debye length set the range of electrostatic interactions; the Grahame equation relates the surface charge density of a planar double layer to its surface potential in a symmetric z:z electrolyte of salt number density n0 = 1000 NAI/z^2, with I in mol/L.",
+     "refs": [
+      "Grahame 1947"
+     ],
+     "ref_texts": [
+      "D. C. Grahame, Chem. Rev., 1947, 41, 441-501. DOI: 10.1021/cr60130a002."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "debye_l",
+     "text": "I = 1/2 sum over i of c_i z_i^2; lambda_D = sqrt((epsilon_r epsilon0 kT)/(2N_A Ie^2)); sigma = sqrt(8 epsilon_r epsilon0 kTn0) sinh((ze psi0)/(2kT))",
+     "latex": "I = \\frac{1}{2}\\sum_i c_iz_i^2,\\qquad \\lambda_D = \\sqrt{\\frac{\\varepsilon_r\\varepsilon_0kT}{2N_{\\mathrm{A}}Ie^2}},\\qquad \\sigma = \\sqrt{8\\varepsilon_r\\varepsilon_0kTn_0}\\,\\sinh\\frac{ze\\psi_0}{2kT}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Zeta potential. The Henry equation converts an electrophoretic mobility to a zeta potential; f(kappa a) is 1 in the Huckel limit, 1.5 in the Smoluchowski limit and otherwise one of the closed-form approximations of Ohshima, Swan-Furst or Qin, each requiring kappa a. The regime has no default. For |zeta| above about 50 mV and kappa a >= 10 the Ohshima-Healy-White expression including counterion relaxation is used and inverted numerically on [0, 150] mV, and the full O'Brien-White equations can be solved by radial quadrature for any kappa a.",
+     "refs": [
+      "Henry 1931",
+      "Ohshima 1994",
+      "Ohshima 1983",
+      "Obrien 1978"
+     ],
+     "ref_texts": [
+      "D. C. Henry, Proc. R. Soc. London, Ser. A, 1931, 133, 106-129. DOI: 10.1098/rspa.1931.0133.",
+      "H. Ohshima, J. Colloid Interface Sci., 1994, 168, 269-271. DOI: 10.1006/jcis.1994.1419.",
+      "H. Ohshima, T. W. Healy and L. R. White, J. Chem. Soc., Faraday Trans. 2, 1983, 79, 1613. DOI: 10.1039/f29837901613.",
+      "R. W. O'Brien and L. R. White, J. Chem. Soc., Faraday Trans. 2, 1978, 74, 1607. DOI: 10.1039/f29787401607."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "henry",
+     "text": "mu_e = (2 epsilon_r epsilon0 zeta)/(3 eta) f(kappa a); f_Ohshima = 1 + 1/(2(1+delta)^3), delta = 2.5/(kappa a (1 + 2e^(-kappa a)))",
+     "latex": "\\mu_e = \\frac{2\\varepsilon_r\\varepsilon_0\\zeta}{3\\eta}\\,f(\\kappa a),\\qquad f_{\\mathrm{Ohshima}} = 1 + \\frac{1}{2(1+\\delta)^3},\\quad \\delta = \\frac{2.5}{\\kappa a\\,(1 + 2e^{-\\kappa a})}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Double-layer profiles. The nonlinear planar Poisson-Boltzmann equation is solved as a boundary-value problem with psi(0) = psi0 and decay at the far boundary, and the result is compared point by point with the analytic Gouy-Chapman solution. For surfaces whose ionization depends on the local pH, charge regulation solves the site dissociation and the double layer self-consistently: the local pH is pH + e psi0/(kT ln 10), an acid site carries sigma = -F Gamma theta with theta = 1/(1 + 10^pKa - pHs), and psi0 is found by bisection so that the site charge equals the double-layer charge of the Grahame equation.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "pb",
+     "text": "(d^2 psi)/(dx^2) = (2zen0)/(epsilon_r epsilon0) sinh((ze psi)/(kT)); psi_GC(x) = (4kT)/(ze) artanh [tanh((ze psi0)/(4kT)) exp(-x/lambda_D)]",
+     "latex": "\\frac{d^2\\psi}{dx^2} = \\frac{2zen_0}{\\varepsilon_r\\varepsilon_0}\\sinh\\frac{ze\\psi}{kT},\\qquad \\psi_{GC}(x) = \\frac{4kT}{ze}\\,\\mathrm{artanh}\\left[\\tanh\\left(\\frac{ze\\psi_0}{4kT}\\right)e^{-x/\\lambda_D}\\right]"
+    }
+   ],
+   "tools": [
+    [
+     "ionic_strength",
+     "T1"
+    ],
+    [
+     "debye_screening_length",
+     "T1"
+    ],
+    [
+     "grahame_equation_surface_potential",
+     "T2"
+    ],
+    [
+     "zeta_potential",
+     "T1"
+    ],
+    [
+     "predict_mobility_relaxation_corrected",
+     "T1+"
+    ],
+    [
+     "zeta_potential_relaxation_corrected",
+     "T1+"
+    ],
+    [
+     "planar_pb_profile",
+     "T2"
+    ],
+    [
+     "charge_regulation_pb",
+     "T2"
+    ],
+    [
+     "obrien_white_numerical",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.8",
+   "title": "Hydrodynamic size",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "The Stokes-Einstein equation converts a translational diffusion coefficient (cm^2/s) and a solvent viscosity (mPa s) into a hydrodynamic radius. For a spheroid of axial ratio p = a/b the Perrin friction factor relative to the sphere of equal volume gives the equivalent-sphere radius; p must be supplied (for example from packing geometry or scattering) and is never fitted from D alone.",
+     "refs": [
+      "Perrin 1934"
+     ],
+     "ref_texts": [
+      "F. Perrin, J. Phys. Radium, 1934, 5, 497-511. DOI: 10.1051/jphysrad:01934005010049700."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "perrin",
+     "text": "R_h = (kT)/(6 pi eta D); F_P = (2p^(2/3))/S, S = (2 artanh xi)/xi (p>1), S = (2 arctan xi)/xi (p<1), xi = (sqrt(|p^2-1|))/p",
+     "latex": "R_h = \\frac{kT}{6\\pi\\eta D},\\qquad F_P = \\frac{2p^{2/3}}{S},\\quad S = \\frac{2\\,\\mathrm{artanh}\\,\\xi}{\\xi}\\ (p>1),\\quad S = \\frac{2\\arctan\\xi}{\\xi}\\ (p<1),\\quad \\xi = \\frac{\\sqrt{|p^2-1|}}{p}"
+    },
+    {
+     "type": "eq",
+     "key": "se",
+     "text": "R_eq = R_h/F_P",
+     "latex": "R_{\\mathrm{eq}} = R_h/F_P"
+    }
+   ],
+   "tools": [
+    [
+     "hydrodynamic_radius",
+     "T1"
+    ],
+    [
+     "hydrodynamic_radius_perrin_corrected",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.9",
+   "title": "Micellization kinetics",
+   "items": [
+    {
+     "type": "p",
+     "kind": "principle",
+     "text": "Stepwise association Cn + C1 = Cn+1 with a single equilibrium constant K gives a closed-form equilibrium distribution, found by bisection on the monomer concentration; the product is evaluated as x1(Kx1)^n-1 so that it stays finite for large K and n.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "massact",
+     "text": "x_n = K^(n-1) x1^n; sum over n=1 to n_max of n x_n = c_tot",
+     "latex": "x_n = K^{n-1}x_1^n,\\qquad \\sum_{n=1}^{n_{\\max}} n\\,x_n = c_{\\mathrm{tot}}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Relaxation. The master equation of the same scheme, with koff = kon/K, is integrated with a stiff solver after a jump in K; the relaxation spectrum comes from the eigenvalues of the Jacobian at the new equilibrium, and the final state is compared with the closed form. Its stochastic counterpart is a Gillespie simulation of the same reactions. From independently measured fast and slow relaxation times the Aniansson-Wall equations give the dissociation rate constant k- and the resistance R in closed form, with a = (Ctot - CMC)/CMC and sigma the width of the micelle size distribution.",
+     "refs": [
+      "Gillespie 1977",
+      "Aniansson 1974",
+      "Patist 2002"
+     ],
+     "ref_texts": [
+      "D. T. Gillespie, J. Phys. Chem., 1977, 81, 2340-2361. DOI: 10.1021/j100540a008.",
+      "E. A. G. Aniansson and S. N. Wall, J. Phys. Chem., 1974, 78, 1024-1030. DOI: 10.1021/j100603a016.",
+      "A. Patist, J. R. Kanicky, P. K. Shukla and D. O. Shah, J. Colloid Interface Sci., 2002, 245, 1-15. DOI: 10.1006/jcis.2001.7955."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "aw",
+     "text": "1/tau1 = (k_-)/(sigma^2)(1 + (sigma^2)/(n_bar) a); 1/tau2 = (n_bar^2)/(CMC R)(1 + (sigma^2)/(n_bar) a)^(-1)",
+     "latex": "\\frac{1}{\\tau_1} = \\frac{k_-}{\\sigma^2}\\left(1 + \\frac{\\sigma^2}{\\bar n}a\\right),\\qquad \\frac{1}{\\tau_2} = \\frac{\\bar n^2}{\\mathrm{CMC}\\,R}\\left(1 + \\frac{\\sigma^2}{\\bar n}a\\right)^{-1}"
+    }
+   ],
+   "tools": [
+    [
+     "mass_action_equilibrium",
+     "T2"
+    ],
+    [
+     "micelle_relaxation_odes",
+     "T2"
+    ],
+    [
+     "kmc_micelle_kinetics",
+     "T2"
+    ],
+    [
+     "aniansson_wall_two_regime",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.10",
+   "title": "Emulsion stability and surfactant transport",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Creaming. The drops of each bin of a size distribution start evenly distributed over a column of height H and rise at the Stokes velocity, so the creamed share of the bin grows linearly until its travel time tc = H/v; a monodisperse emulsion is half creamed at H/(2v). Drops that have reached the top coalesce with a first-order rate constant k, integrated analytically over their arrival times. The separated fraction, the time to 50% separation and an area-based stability index are returned.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "stokes",
+     "text": "v = (|Delta rho|g d^2)/(18 eta); F(t) = sum over i of w_i 1/t_c,i integral from 0 to min(t, t_c,i) of (1 - exp(-k(t-s)))ds",
+     "latex": "v = \\frac{|\\Delta\\rho|g\\,d^2}{18\\eta},\\qquad F(t) = \\sum_i w_i\\,\\frac{1}{t_{c,i}}\\int_0^{\\min(t,\\,t_{c,i})}\\left(1 - e^{-k(t-s)}\\right)ds"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Population balance. A discrete population balance over clusters of k primary drops evolves by coalescence with a constant, sum or product kernel, by first-order binary breakage and by Lifshitz-Slyozov-Wagner ripening, and reports the Sauter diameter d32(t). With the constant kernel the total number follows the exact solution n(t) = n0/(1 + lambda n0t/2), which the solver reproduces.",
+     "refs": [
+      "Lifshitz 1961"
+     ],
+     "ref_texts": [
+      "I. M. Lifshitz and V. V. Slyozov, Journal of Physics and Chemistry of Solids, 1961, 19, 35-50. DOI: 10.1016/0022-3697(61)90054-3."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "pbe",
+     "text": "(dn_k)/(dt) = 1/2 sum over i+j=k of K_ij n_i n_j - n_k sum over j of K_kj n_j (+ breakage); d32 = (sum of n_k d_k^3)/(sum of n_k d_k^2)",
+     "latex": "\\frac{dn_k}{dt} = \\frac{1}{2}\\sum_{i+j=k}K_{ij}n_in_j - n_k\\sum_jK_{kj}n_j\\ (+\\ \\mathrm{breakage}),\\qquad d_{32} = \\frac{\\sum n_kd_k^3}{\\sum n_kd_k^2}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Transport. One-dimensional advection-dispersion through a column with equilibrium Langmuir adsorption is solved by Crank-Nicolson with the concentration-dependent retardation factor; breakthrough curves are returned at the outlet, and the tracer case matches the Ogata-Banks analytic solution.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "eq",
+     "key": "cde",
+     "text": "R(c)(d c)/(d t) = D(d^2 c)/(d x^2) - v(d c)/(d x); R(c) = 1 + (q_max b)/((1+bc)^2)",
+     "latex": "R(c)\\frac{\\partial c}{\\partial t} = D\\frac{\\partial^2c}{\\partial x^2} - v\\frac{\\partial c}{\\partial x},\\qquad R(c) = 1 + \\frac{q_{\\max}b}{(1+bc)^2}"
+    }
+   ],
+   "tools": [
+    [
+     "simulate_emulsion_stability",
+     "T2"
+    ],
+    [
+     "population_balance_emulsion",
+     "T2"
+    ],
+    [
+     "surfactant_transport_1d",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.11",
+   "title": "Solubilization and wetting",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Solubilization. The molar solubilization ratio counts solubilizate per mole of micellized surfactant, and the micelle-water partition coefficient on the mole-fraction basis compares the solubilizate's mole fraction in the micelles with that in water. A second, concentration-ratio convention for Km exists in the literature and gives different numbers; the tool states which one it uses. Intrinsic water solubilities come from a small sourced table or, when none is available, from a refit of the ESOL linear model, reported with its 0.6 to 1 log-unit error.",
+     "refs": [
+      "Delaney 2004"
+     ],
+     "ref_texts": [
+      "J. S. Delaney, J. Chem. Inf. Comput. Sci., 2004, 44, 1000-1005. DOI: 10.1021/ci034243x."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "msr",
+     "text": "MSR = (S_tot - S_w)/(C_surf - CMC); K_m = X_m/X_w = ((S_tot-S_w)/[(S_tot-S_w) + (C_surf-CMC)])/(S_w/55.5)",
+     "latex": "\\mathrm{MSR} = \\frac{S_{\\mathrm{tot}} - S_w}{C_{\\mathrm{surf}} - \\mathrm{CMC}},\\qquad K_m = \\frac{X_m}{X_w} = \\frac{(S_{\\mathrm{tot}}-S_w)/[(S_{\\mathrm{tot}}-S_w) + (C_{\\mathrm{surf}}-\\mathrm{CMC})]}{S_w/55.5}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Wetting. Young-Dupre gives the work of adhesion and the spreading coefficient from a contact angle. The Owens-Wendt-Rabel-Kaelble method splits a solid's surface energy into dispersive and polar parts from two or more probe liquids by linear regression, and the van Oss-Chaudhury-Good method into Lifshitz-van der Waals, acid and base parts from three liquids. Standard probe-liquid components are returned only for water, diiodomethane, glycerol and formamide. The capillary number Ca = eta v/gamma compares viscous with capillary forces.",
+     "refs": [
+      "Owens 1969",
+      "Vanoss 1988"
+     ],
+     "ref_texts": [
+      "D. K. Owens and R. C. Wendt, J. Appl. Polym. Sci., 1969, 13, 1741-1747. DOI: 10.1002/app.1969.070130815.",
+      "C. J. Van Oss, M. K. Chaudhury and R. J. Good, Chem. Rev., 1988, 88, 927-941. DOI: 10.1021/cr00088a006."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "wet",
+     "text": "W_a = gamma_LV(1+cos theta), S = gamma_LV(cos theta - 1), (gamma_L(1+cos theta))/2 = sqrt(gamma_S^d gamma_L^d) + sqrt(gamma_S^p gamma_L^p)",
+     "latex": "W_a = \\gamma_{LV}(1+\\cos\\theta),\\quad S = \\gamma_{LV}(\\cos\\theta - 1),\\quad \\frac{\\gamma_L(1+\\cos\\theta)}{2} = \\sqrt{\\gamma_S^d\\gamma_L^d} + \\sqrt{\\gamma_S^p\\gamma_L^p}"
+    },
+    {
+     "type": "eq",
+     "key": "vocg",
+     "text": "(gamma_L(1+cos theta))/2 = sqrt(gamma_S^(LW) gamma_L^(LW)) + sqrt(gamma_S^+ gamma_L^-) + sqrt(gamma_S^- gamma_L^+)",
+     "latex": "\\frac{\\gamma_L(1+\\cos\\theta)}{2} = \\sqrt{\\gamma_S^{LW}\\gamma_L^{LW}} + \\sqrt{\\gamma_S^{+}\\gamma_L^{-}} + \\sqrt{\\gamma_S^{-}\\gamma_L^{+}}"
+    }
+   ],
+   "tools": [
+    [
+     "intrinsic_water_solubility_reference",
+     "T1"
+    ],
+    [
+     "molar_solubilization_ratio",
+     "T1"
+    ],
+    [
+     "micelle_water_partition_coefficient",
+     "T2"
+    ],
+    [
+     "estimate_intrinsic_water_solubility_qspr",
+     "T3"
+    ],
+    [
+     "wetting_work_of_adhesion",
+     "T1"
+    ],
+    [
+     "get_standard_probe_liquid_properties",
+     "T1+"
+    ],
+    [
+     "owens_wendt_solid_surface_energy",
+     "T2"
+    ],
+    [
+     "van_oss_chaudhury_good_solid_surface_energy",
+     "T2"
+    ],
+    [
+     "wetting_spreading_coefficient",
+     "T1"
+    ],
+    [
+     "eor_capillary_number",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.12",
+   "title": "Structure identification and molecular descriptors",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Charge type and family. RDKit substructure patterns for sulfate, sulfonate, carboxylate, phosphate mono- and diester, quaternary ammonium, quaternary aromatic nitrogen and other head groups classify a SMILES as anionic, cationic, nonionic or zwitterionic; a group whose charge depends on pH is reported as pH-dependent unless a pH is given, in which case the stated pKa decides. Gemini (two head groups) and glycolipid structures are recognized as structural families.",
+     "refs": [
+      "rdkit"
+     ],
+     "ref_texts": [
+      "RDKit: Open-Source Cheminformatics, https://www.rdkit.org (accessed October 2026)."
+     ]
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Descriptors and conformers. The descriptor panel returns the Wildman-Crippen logP, the topological polar surface area and other RDKit descriptors. The conformer tool embeds ETKDG conformers with a fixed seed, minimizes them with MMFF94s and reports, for the lowest-energy conformer, the van der Waals volume, the Labute surface area and the relative shape anisotropy of the heavy-atom gyration tensor.",
+     "refs": [
+      "Wildman 1999",
+      "Ertl 2000"
+     ],
+     "ref_texts": [
+      "S. A. Wildman and G. M. Crippen, J. Chem. Inf. Comput. Sci., 1999, 39, 868-873. DOI: 10.1021/ci990307l.",
+      "P. Ertl, B. Rohde and P. Selzer, J. Med. Chem., 2000, 43, 3714-3717. DOI: 10.1021/jm000942e."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "aniso",
+     "text": "kappa^2 = 1 - (3(lambda1 lambda2 + lambda2 lambda3 + lambda3 lambda1))/((lambda1+lambda2+lambda3)^2)",
+     "latex": "\\kappa^2 = 1 - \\frac{3(\\lambda_1\\lambda_2 + \\lambda_2\\lambda_3 + \\lambda_3\\lambda_1)}{(\\lambda_1+\\lambda_2+\\lambda_3)^2}"
+    }
+   ],
+   "tools": [
+    [
+     "classify_surfactant_charge_type",
+     "T2"
+    ],
+    [
+     "classify_surfactant_charge_type_at_ph",
+     "T2"
+    ],
+    [
+     "classify_surfactant_structural_family",
+     "T2"
+    ],
+    [
+     "rdkit_descriptor_panel",
+     "T1+"
+    ],
+    [
+     "conformer_volume_3d",
+     "T3"
+    ]
+   ]
+  },
+  {
+   "id": "S1.13",
+   "title": "Molecular simulation",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Coarse-grained self-assembly. Two-bead surfactants (head and tail joined by a harmonic spring) move by overdamped Langevin dynamics in a periodic box, with an attraction between tails; clusters are identified over production frames and give the aggregation-number distribution and a monomer-fraction estimate of a CMC-like threshold. The model reproduces trends (micelles above a threshold concentration, a monomer plateau) and is labelled as qualitative: it does not predict absolute CMCs.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Dissipative particle dynamics. The C8E4 model of Rummel et al., with their bead types and interaction table, Groot-Warren thermostat, harmonic bonds and angle potentials, is run in reduced units; the free-monomer fraction pfree(t) is fitted with an exponential and converted to a CMC. Boxes small enough to run interactively are finite-size limited, and the result says so; long runs are submitted as asynchronous jobs.",
+     "refs": [
+      "Groot 1997",
+      "Anderson 2017",
+      "Rummel 2026"
+     ],
+     "ref_texts": [
+      "R. D. Groot and P. B. Warren, J. Chem. Phys., 1997, 107, 4423-4435. DOI: 10.1063/1.474784.",
+      "R. L. Anderson, D. J. Bray, A. S. Ferrante, M. G. Noro, I. P. Stott and P. B. Warren, J. Chem. Phys., 2017, 147, 094503. DOI: 10.1063/1.4992111.",
+      "F. Rummel, J. F. Robinson, P. B. Warren, D. J. Bray and R. L. Anderson, J. Phys. Chem. B, 2026, 130, 618-629. DOI: 10.1021/acs.jpcb.5c07475."
+     ]
+    },
+    {
+     "type": "eq",
+     "key": "dpd",
+     "text": "U_ij = 1/2 A_ij R_ij(1-r/R_ij)^2 (r<= R_ij); p_free(t) = A + (B-A) exp(-t/tau)",
+     "latex": "U_{ij} = \\frac{1}{2}A_{ij}R_{ij}\\left(1-\\frac{r}{R_{ij}}\\right)^2\\ (r\\leq R_{ij}),\\qquad p_{\\mathrm{free}}(t) = A + (B-A)e^{-t/\\tau}"
+    },
+    {
+     "type": "eq",
+     "key": "anderson",
+     "text": "ln C_free + beta ln [beta C_free + ((1-beta)C_tot)/(1-phi)] = (1+beta) ln CMC",
+     "latex": "\\ln C_{\\mathrm{free}} + \\beta\\ln\\left[\\beta C_{\\mathrm{free}} + \\frac{(1-\\beta)C_{\\mathrm{tot}}}{1-\\phi}\\right] = (1+\\beta)\\ln\\mathrm{CMC}"
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "For beta = 0 the CMC equals the free-monomer concentration; the jackknife over repeat traces gives its uncertainty. A trajectory analyser reads existing trajectories and returns per-frame cluster counts and sizes (single-linkage clustering at a stated cutoff), the radius of gyration of the largest cluster and density profiles; it does not validate the underlying model.",
+     "refs": [],
+     "ref_texts": []
+    }
+   ],
+   "tools": [
+    [
+     "brownian_self_assembly",
+     "T3"
+    ],
+    [
+     "brownian_cmc_scan",
+     "T3"
+    ],
+    [
+     "dpd_micelle_cmc",
+     "T3"
+    ],
+    [
+     "submit_dpd_micelle_cmc_job",
+     "T3"
+    ],
+    [
+     "dpd_micelle_cmc_job_status",
+     "T3"
+    ],
+    [
+     "cmc_from_free_monomer",
+     "T2"
+    ],
+    [
+     "free_monomer_from_cmc",
+     "T2"
+    ],
+    [
+     "anderson_cmc_analysis",
+     "T2"
+    ],
+    [
+     "analyze_micelle_trajectory",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.14",
+   "title": "Statistical inference",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Fits with errors. Nonlinear least squares (trust-region reflective) returns parameter standard errors from the covariance s^2(J^TWJ)^-1, 95% intervals, r^2 and residual diagnostics (largest standardized residual and lag-one autocorrelation); models are chosen by name from a registry (linear, exponential decay, Szyszkowski, Frumkin) so that no code crosses the MCP interface. A global fit shares parameters across several data sets while each keeps its own local parameters.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Posterior and propagation. A random-walk Metropolis sampler with four chains and a proposal tuned during burn-in returns medians, credible intervals, the split R-hat and effective sample sizes; observation noise is a stated input, not estimated. Monte Carlo propagation draws each input of a named formula chain from its stated distribution and reports the output median and percentile interval.",
+     "refs": [
+      "Gelman 1992"
+     ],
+     "ref_texts": [
+      "A. Gelman and D. B. Rubin, Statist. Sci., 1992, 7, 457-472. DOI: 10.1214/ss/1177011136."
+     ]
+    }
+   ],
+   "tools": [
+    [
+     "nonlinear_fit_with_errors",
+     "T2"
+    ],
+    [
+     "propagate_uncertainty_chain",
+     "T2"
+    ],
+    [
+     "mcmc_posterior_fit",
+     "T2"
+    ],
+    [
+     "global_multi_dataset_fit",
+     "T2"
+    ]
+   ]
+  },
+  {
+   "id": "S1.15",
+   "title": "Property orchestrator",
+   "items": [
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Given only a SMILES and a surface tension curve, the orchestrator classifies the surfactant (S1.12), finds the CMC (S1.2), selects between the Langmuir and Frumkin isotherms (S1.1), and computes the surface excess, area per molecule and C20. Every point where an input is missing (an unknown electrolyte condition, a pH-dependent charge, no measured counterion binding for the free energy) is carried to the result as a named gap, and the corresponding quantity is returned as null rather than computed from an assumed value.",
+     "refs": [],
+     "ref_texts": []
+    },
+    {
+     "type": "p",
+     "kind": "description",
+     "text": "Library functions without an MCP tool. The release also contains functions that are called from Python only: Flory-Huggins and Temkin isotherms, Gibbs-Marangoni surface elasticity, a CMC estimate from deviation from the Szyszkowski fit, closed-form diffusion- and kinetically-limited asymptotes of dynamic surface tension with a BIC choice between them, and foam measures (Ross-Miles summaries, Bikerman's foaminess index and a choice between exponential and logarithmic foam decay). They follow the same refusal rules and are covered by the test suite.",
+     "refs": [
+      "Ritacco 2011"
+     ],
+     "ref_texts": [
+      "H. Ritacco, D. Langevin, H. Diamant and D. Andelman, Langmuir, 2011, 27, 1009-1014. DOI: 10.1021/la103039v."
+     ]
+    }
+   ],
+   "tools": [
+    [
+     "derive_all_properties_from_smiles_and_curve",
+     "chained"
+    ]
+   ]
+  }
+ ]
+}

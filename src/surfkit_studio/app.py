@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import citations, data_io, literature, llm, report, router
+from . import citations, data_io, literature, report, router
 from .catalog import TECHNIQUES, tiers, tree
 from .catalog.base import RunInput
 
@@ -147,25 +147,13 @@ class ChatRequest(BaseModel):
     message: str
 
 
-LLM = llm.LocalLLM()
-
-
-@app.get("/api/status")
-def status():
-    return {"local_ai": LLM.available(), "model": LLM.model}
-
-
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     s = _session(req.sid)
     q = literature.wants_search(req.message)
     if q is not None:
         return _literature_reply(s, q)
-    model = LLM if s.get("use_ai", True) and LLM.available() else None
-    out = router.route(req.message, s["values"], model, s.setdefault("history", []))
-    s["history"] += [{"role": "user", "content": req.message},
-                     {"role": "assistant", "content": out["reply"][:600]}]
-    return out
+    return router.route(req.message, s["values"])
 
 
 def _literature_reply(s: dict, q: str) -> dict:
@@ -231,22 +219,15 @@ def search(req: SearchRequest):
 
 class Settings(BaseModel):
     sid: str
-    use_ai: bool | None = None
     web_search: bool | None = None
-    model: str | None = None
 
 
 @app.post("/api/settings")
 def settings(req: Settings):
     s = _session(req.sid)
-    if req.use_ai is not None:
-        s["use_ai"] = req.use_ai
     if req.web_search is not None:
         s["web_search"] = req.web_search
-    if req.model:
-        LLM.model = req.model
-    return {"use_ai": s.get("use_ai", True), "web_search": s["web_search"], "model": LLM.model,
-            "local_ai": LLM.available()}
+    return {"web_search": s["web_search"]}
 
 
 @app.get("/api/report/{sid}.{fmt}")

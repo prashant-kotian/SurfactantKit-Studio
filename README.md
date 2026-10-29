@@ -75,20 +75,22 @@ precision.
 - **No guessing.** An ionic surfactant's free energy is not computed without beta; Gamma_max is not
   computed without the electrolyte condition.
 
-## Local AI chat (optional)
+## Chat: questions answered from the documentation, no AI model
 
-Install [Ollama](https://ollama.com) and pull a small model:
+There is no language model in the Studio and nothing to download for the chat. Two kinds of
+message are understood:
 
-```bash
-ollama pull qwen3:1.7b        # ~1.4 GB; any Ollama model works (set SURFKIT_MODEL)
-```
-
-The model only decides which analysis a request is about and adds a sentence. It never
-computes, states numbers or cites: replies containing digits or citation-like text are
-discarded, and everything substantive (principle, methods, results, accuracy, references)
-comes from the toolkit and the catalog. Without Ollama the chat uses keyword matching.
-Routing accuracy on 54 realistic requests (`tests/eval_router.py`): 51/54 with qwen3:1.7b
-plus keyword fallback, 0 replies containing numbers.
+- **Your data** ("I have surface tension vs concentration and want the CMC") opens the matching
+  analysis.
+- **How something is calculated** ("which formula does Rubingh use?", "which non-linear fit is used
+  for the CMC?", "what is the principle of the conductivity method?") is answered from the
+  knowledge base: section S1 of the SurfactantKit Supporting Information (principle, equations,
+  implementation, references for every technique), the Studio's own method descriptions and short
+  notes on how the Studio computes things. The answer quotes the text and the formula, with its
+  source; formulas are converted from the SI's own LaTeX by the SI build, so they cannot drift
+  apart. A question the documentation does not cover gets "not in the documentation", never a
+  guess. Evaluation (`tests/kb_eval.py`, 44 researcher questions and 10 off-topic ones): 44/44
+  answered with the right formula or topic, 10/10 off-topic questions refused.
 
 ## Literature search (optional, off by default)
 
@@ -124,7 +126,8 @@ Try it with the files in `examples/`: `SDS_surface_tension.csv` is real measured
 
 1. **Core** (done): techniques, data import with unit checks, plots, conclusions, tiers,
    citations, DOCX/PDF report, keyword chat.
-2. **Local chat model** (done): Ollama routing with keyword fallback, evaluated.
+2. **Chat** (done; v0.3 replaced the optional Ollama model): keyword routing to analyses, and
+   method/formula questions answered from the documentation (knowledge base), evaluated.
 3. **More techniques** (in progress): done: mixed micelles, aggregation number, packing parameter,
    HLB, HLD, wetting and surface energy, zeta potential, solubilization, dynamic surface tension, foam (done).
 4. **Optional literature search** (done, off by default): only your search words leave the computer, never your data.

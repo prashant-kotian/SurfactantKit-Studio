@@ -51,12 +51,12 @@ def test_search_on_shows_exactly_what_was_sent(monkeypatch):
     assert "not checked citations" in r["reply"] and "doi:10.1/x" in r["reply"]
 
 
-def test_toggles_are_independent():
+def test_web_search_toggle_is_per_session_and_off_by_default():
     sid = client.post("/api/session").json()["sid"]
-    s = client.post("/api/settings", json={"sid": sid, "web_search": True}).json()
-    assert s["web_search"] is True and s["use_ai"] is True
-    s = client.post("/api/settings", json={"sid": sid, "use_ai": False}).json()
-    assert s["web_search"] is True and s["use_ai"] is False
+    other = client.post("/api/session").json()["sid"]
+    assert client.post("/api/settings", json={"sid": sid}).json() == {"web_search": False}
+    assert client.post("/api/settings", json={"sid": sid, "web_search": True}).json() == {"web_search": True}
+    assert client.post("/api/settings", json={"sid": other}).json() == {"web_search": False}
 
 
 @pytest.mark.skipif(not os.environ.get("SURFKIT_LIVE"), reason="live network test; set SURFKIT_LIVE=1")

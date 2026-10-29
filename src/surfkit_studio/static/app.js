@@ -2,6 +2,9 @@
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 let SID = null, CATALOG = null, CURRENT = null, MAPPING = null;
+// analyses that Workbook mode also runs, so their panels point to its template
+const WORKBOOK_TECHS = new Set(["cmc_tensiometry", "cmc_conductivity", "mixed_micelles", "surface_excess",
+  "gibbs_energy_micellization", "vant_hoff"]);
 
 async function api(path, opts = {}) {
   const r = await fetch(path, opts);
@@ -18,8 +21,8 @@ function say(text, who = "bot", engine = "") {
   if (engine) {
     const e = document.createElement("span");
     e.className = "engine";
-    e.textContent = engine === "local-ai" ? "routed by the local AI"
-      : engine === "literature" ? "literature search (only your search words were sent)" : "routed by keyword matching";
+    e.textContent = engine === "knowledge" ? "from the SurfactantKit documentation (quoted, not generated)"
+      : engine === "literature" ? "literature search (only your search words were sent)" : "matched to an analysis";
     d.appendChild(e);
   }
   $("#log").appendChild(d);
@@ -89,7 +92,9 @@ function openTechnique(id) {
   }).join("");
   const dataset = t.dataset ? `<div class="card"><h3>Your data</h3>
       <p class="muted">CSV or Excel with columns: ${t.dataset.columns.map((c) => `${esc(c.label)} (${c.units.join(", ")})`).join("; ")}. At least ${t.dataset.min_rows} rows.
-      <a href="/api/example/${t.dataset.example}" download>Example file</a></p>
+      <a href="/api/example/${t.dataset.example}" download>Example file</a> (one table, for this analysis only)</p>
+      ${WORKBOOK_TECHS.has(t.id) ? `<p class="muted">Whole study with triplicate runs, both pure surfactants and their mixtures?
+        Use the <a href="/api/workbook/template.xlsx">Workbook template</a> instead and upload it under Workbook mode (top of this panel).</p>` : ""}
       <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls"><div id="mapping"></div></div>` : "";
   const missing = t.missing.length ? `<div class="warn">Needs results you have not produced yet: ${t.missing.join(", ")}. Run the analysis it comes from first.</div>` : "";
   $("#panel").innerHTML = `<div class="card"><h2>${esc(t.title)}</h2><p>${esc(t.summary)}</p>${missing}</div>
@@ -176,14 +181,6 @@ for (const fmt of ["docx", "pdf"]) {
   };
 }
 
-async function showAiStatus(useAi) {
-  const s = await post("/api/settings", { sid: SID, use_ai: useAi });
-  $("#ai-status").innerHTML = !useAi ? "Local AI off (keyword mode)"
-    : s.local_ai ? `Local AI: <span class="on">${esc(s.model)}</span>`
-    : `Local AI unavailable (start Ollama, model ${esc(s.model)}); using keyword mode`;
-}
-$("#ai-toggle").onchange = (e) => showAiStatus(e.target.checked);
-
 async function showWebStatus(on) {
   const s = await post("/api/settings", { sid: SID, web_search: on });
   $("#web-status").innerHTML = s.web_search
@@ -221,7 +218,6 @@ $("#wb-file").onchange = async (e) => {
 
 (async () => {
   SID = (await post("/api/session", {})).sid;
-  await showAiStatus(true);
   await loadCatalog();
-  say("Hello. Tell me what data you have or what you want to find, for example: \"I have surface tension vs concentration for my surfactant and want the CMC\". Everything runs on this computer.");
+  say("Hello. Tell me what data you have or what you want to find, for example: \"I have surface tension vs concentration for my surfactant and want the CMC\". You can also ask how something is calculated, for example: \"which formula does Rubingh use?\" Answers come from the SurfactantKit documentation. Everything runs on this computer.");
 })();

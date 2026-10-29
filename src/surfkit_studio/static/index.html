@@ -10,9 +10,6 @@
 <body>
 <header class="bar">
   <div class="brand">SurfactantKit Studio <span class="tag">runs locally &middot; your data stays on this computer</span></div>
-  <label class="ai" title="Local language model via Ollama. It only routes your request; every number comes from SurfactantKit.">
-    <input type="checkbox" id="ai-toggle" checked> <span id="ai-status">Local AI: checking...</span>
-  </label>
   <label class="ai" title="Off by default. When on, typing 'search: your keywords' in the chat sends only those keywords to OpenAlex (or Crossref) and lists matching papers. Your data never leaves this computer.">
     <input type="checkbox" id="web-toggle"> <span id="web-status">Search literature online: off</span>
   </label>
@@ -26,7 +23,7 @@
   <section class="chat" aria-label="Chat">
     <div id="log" class="log" aria-live="polite"></div>
     <form id="chat-form" class="composer">
-      <input id="msg" autocomplete="off" placeholder="e.g. I have surface tension vs concentration data and want the CMC">
+      <input id="msg" autocomplete="off" placeholder="e.g. I have surface tension data and want the CMC, or: which formula does Rubingh use?">
       <button>Send</button>
     </form>
   </section>

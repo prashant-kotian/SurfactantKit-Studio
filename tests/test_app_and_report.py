@@ -58,7 +58,6 @@ def test_session_values_prefill_derived_parameters(full_session):
 
 def test_chat_opens_the_matching_panel():
     sid = _session()
-    client.post("/api/settings", json={"sid": sid, "use_ai": False})   # deterministic keyword engine
     r = client.post("/api/chat", json={"sid": sid, "message": "I have surface tension vs conc data, want the CMC"}).json()
     assert r["action"]["open"] == "cmc_tensiometry"
     assert "Which do you want" in r["reply"]
