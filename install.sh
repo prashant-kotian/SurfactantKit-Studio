@@ -16,7 +16,7 @@ VPY=.venv/bin/python
 if [ -n "${SURFACTANTKIT_SRC:-}" ]; then
   "$VPY" -m pip install -e "${SURFACTANTKIT_SRC}[calc]"
 else
-  "$VPY" -m pip install "surfactantkit[calc] @ git+https://github.com/prashant-kotian/Surfactant-Toolkit.git"
+  "$VPY" -m pip install "surfactantkit[calc] @ git+https://github.com/prashant-kotian/Surfactant-Toolkit.git@v1.3.0"
 fi
 "$VPY" -m pip install -e .
 echo

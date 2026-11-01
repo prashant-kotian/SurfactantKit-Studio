@@ -24,7 +24,7 @@ if defined SURFACTANTKIT_SRC (
   %VPY% -m pip install -e "%SURFACTANTKIT_SRC%[calc]" || goto :fail
 ) else (
   echo Installing SurfactantKit from GitHub ...
-  %VPY% -m pip install "surfactantkit[calc] @ git+https://github.com/prashant-kotian/Surfactant-Toolkit.git" || goto :fail
+  %VPY% -m pip install "surfactantkit[calc] @ git+https://github.com/prashant-kotian/Surfactant-Toolkit.git@v1.3.0" || goto :fail
 )
 echo Installing SurfactantKit Studio ...
 %VPY% -m pip install -e . || goto :fail

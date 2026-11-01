@@ -9,7 +9,7 @@ DOCX or PDF.
 telemetry, and every calculation runs in [SurfactantKit](https://github.com/prashant-kotian/Surfactant-Toolkit),
 a tested Python library.
 
-## What it does (v0.2)
+## What it does (v0.4.0)
 
 | Category | Technique | Input | Methods |
 |---|---|---|---|
